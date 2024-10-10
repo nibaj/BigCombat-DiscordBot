@@ -3,7 +3,7 @@ import fs from 'fs';
 // Load player data from JSON (or any database in the future)
 export function loadPlayerData() {
   try {
-    return JSON.parse(fs.readFileSync('data/players.json', 'utf-8'));
+    return JSON.parse(fs.readFileSync('public/data/players.json', 'utf-8'));
   } catch (err) {
     console.error('Error loading player data:', err);
     return {};
@@ -12,13 +12,13 @@ export function loadPlayerData() {
 
 // Save player data to JSON
 function savePlayerData(players) {
-  fs.writeFileSync('data/players.json', JSON.stringify(players, null, 4));
+  fs.writeFileSync('public/data/players.json', JSON.stringify(players, null, 4));
 }
 
 // Load predefined units from units.json
 export function loadUnits() {
   try {
-    return JSON.parse(fs.readFileSync('data/units.json'));
+    return JSON.parse(fs.readFileSync('public/data/units.json'));
   } catch (e) {
     return [];
   }
@@ -72,7 +72,7 @@ export function createUnit(playerId, username, unitName, unitType) {
 
 /// Delete a unit from any player's units
 export function deleteUnit(unitName) {
-  const players = JSON.parse(fs.readFileSync('data/players.json', 'utf-8'));
+  const players = JSON.parse(fs.readFileSync('public/data/players.json', 'utf-8'));
   let unitFound = false;
 
   // Loop through all players to find and delete the unit
@@ -90,7 +90,7 @@ export function deleteUnit(unitName) {
 
   // Save the updated data back to the file if a unit was found and deleted
   if (unitFound) {
-    fs.writeFileSync('data/players.json', JSON.stringify(players, null, 2));
+    fs.writeFileSync('public/data/players.json', JSON.stringify(players, null, 2));
   }
 
   return { success: unitFound };
@@ -101,7 +101,7 @@ export function getUserInfo(userId) {
   let players;
 
   try {
-    players = JSON.parse(fs.readFileSync('data/players.json', 'utf-8'));
+    players = JSON.parse(fs.readFileSync('public/data/players.json', 'utf-8'));
   } catch (error) {
     console.error('Error reading players.json:', error);
     return { success: false };
@@ -127,7 +127,7 @@ export function getUnitInfo(unitName) {
   let players;
 
   try {
-    players = JSON.parse(fs.readFileSync('data/players.json', 'utf-8'));
+    players = JSON.parse(fs.readFileSync('public/data/players.json', 'utf-8'));
   } catch (error) {
     console.error('Error reading players.json:', error);
     return { success: false };
@@ -153,7 +153,7 @@ export function getUnitInfo(unitName) {
 
 // Save units data to JSON
 function saveUnits(units) {
-  fs.writeFileSync('data/units.json', JSON.stringify(units, null, 4));
+  fs.writeFileSync('public/data/units.json', JSON.stringify(units, null, 4));
 }
 
 // Get the player's units by their ID
@@ -170,7 +170,7 @@ export function getPlayerUnits(playerId) {
 
 export function loadEquipmentData() {
   try {
-    const data = JSON.parse(fs.readFileSync('data/equipment.json', 'utf-8'));
+    const data = JSON.parse(fs.readFileSync('public/data/equipment.json', 'utf-8'));
     return data;
   } catch (err) {
     console.error('Error loading equipment data:', err);
@@ -181,7 +181,7 @@ export function loadEquipmentData() {
 // Function to get available equipment for a unit
 export function getAvailableEquipment(unit) {
   try {
-    const allEquipment = JSON.parse(fs.readFileSync('data/equipment.json', 'utf-8'));
+    const allEquipment = JSON.parse(fs.readFileSync('public/data/equipment.json', 'utf-8'));
 
     // Ensure that allEquipment is an object
     if (typeof allEquipment !== 'object') {
@@ -229,7 +229,7 @@ export function getAvailableEquipment(unit) {
 // Function to upgrade a unit with selected equipment
 export function upgradeUnitWithEquipment(playerId, unitName, equipmentName) {
   // Load the player data
-  const players = JSON.parse(fs.readFileSync('data/players.json', 'utf-8'));
+  const players = JSON.parse(fs.readFileSync('public/data/players.json', 'utf-8'));
 
   // Find the player
   const player = players[playerId];
@@ -244,7 +244,7 @@ export function upgradeUnitWithEquipment(playerId, unitName, equipmentName) {
   }
 
   // Load equipment data
-  const equipmentData = JSON.parse(fs.readFileSync('data/equipment.json', 'utf-8'));
+  const equipmentData = JSON.parse(fs.readFileSync('public/data/equipment.json', 'utf-8'));
   const equipment = equipmentData[equipmentName];
   if (!equipment) {
     return `Equipment "${equipmentName}" not found.`;
@@ -268,13 +268,13 @@ export function upgradeUnitWithEquipment(playerId, unitName, equipmentName) {
   unit.stats.Equipped_Equipment.push(equipmentName);
 
   // Save the updated player data back to the file
-  fs.writeFileSync('data/players.json', JSON.stringify(players, null, 2));
+  fs.writeFileSync('public/data/players.json', JSON.stringify(players, null, 2));
 
   return `Successfully upgraded unit "${unitName}" with equipment "${equipmentName}".`;
 }
 
 export function updateUnitPosition(playerId, unitName, newQ, newR) {
-  const players = JSON.parse(fs.readFileSync('data/players.json', 'utf-8'));
+  const players = JSON.parse(fs.readFileSync('public/data/players.json', 'utf-8'));
 
   const player = players[playerId];
   if (!player) {
@@ -290,5 +290,5 @@ export function updateUnitPosition(playerId, unitName, newQ, newR) {
   unit.position = { x: newQ, y: newR };
 
   // Save the updated data back to the file
-  fs.writeFileSync('data/players.json', JSON.stringify(players, null, 2));
+  fs.writeFileSync('public/data/players.json', JSON.stringify(players, null, 2));
 }
