@@ -4,27 +4,38 @@ import { InteractionType, InteractionResponseType, verifyKeyMiddleware } from 'd
 import { createUnit, deleteUnit, getUserInfo, getUnitInfo, getPlayerUnits, getAvailableEquipment, upgradeUnitWithEquipment, updateUnitPosition } from './game_controller.js';  // Assuming game logic in game_controller.js
 import { WebSocketServer } from 'ws';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Create an express app
 const app = express();
 // Get port, or default to 3000
 const PORT = process.env.PORT || 3000;
+// Serve static files from the "public" directory
+app.use(express.static('public'));
+
+// Route to serve the interactive map
+app.get('/map-view', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Map to store the last execution timestamps for commands per user
 const commandTimestamps = new Map();
 
-// Create a WebSocket server on the same port as the Express app
+// Setup the WebSocket server
 const wss = new WebSocketServer({ port: 8080 });
-// Handle WebSocket connections
 wss.on('connection', (ws) => {
-    console.log('Client connected to WebSocket.');
+    console.log('WebSocket client connected.');
 
-    // Handle messages received from the client
     ws.on('message', (message) => {
-        console.log('Received:', message);
+        console.log('Received message from client:', message);
     });
 
     ws.on('close', () => {
-        console.log('Client disconnected from WebSocket.');
+        console.log('WebSocket client disconnected.');
     });
 });
 
@@ -261,24 +272,14 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
       }
 
       if (commandName === 'map') {
-        try {
-            // Send the initial response immediately
-            res.send({
-                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-                data: {
-                    content: '🌍 View the interactive map here: [Click to View](http://nibaj.github.io/BigCombat-DiscordBot)',
-                }
-            });
-
-            // Any other async code should not try to send another response
-            // Example async task (if necessary):
-            await someAsyncFunction();
-            console.log('Async task completed successfully');
-        } catch (error) {
-            console.error('Error processing /map command:', error);
-            // Since the response is already sent, do not attempt to send another one here
-        }
+        return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+                content: '🌍 View the interactive map here: [Click to View](https://e4cb-2001-7e8-f606-fc01-b1bb-7d0b-5b58-6046.ngrok-free.app/map-view)',
+            }
+        });
       }
+
 
       // Check if the command is one that requires limited use (e.g., /move, /action)
       if (['move', 'action'].includes(commandName)) {
@@ -531,10 +532,3 @@ function canExecuteCommand(userId, unitName, commandName) {
 
     return { canExecute: true };
 }
-
-// Serve the static HTML page with the canvas
-app.use(express.static('public'));  // Serve files from the 'public' directory
-
-app.get('/map-view', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');  // Serve the HTML file with the interactive map
-});
