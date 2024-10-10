@@ -1,0 +1,92 @@
+[
+    {
+        "Enemy_Name": "Ravenous Gnashers",
+        "FS": 1,
+        "Armor": 0,
+        "Speed": 2,
+        "Range": 1,
+        "AP": 0,
+        "Keywords": ["ground"]
+    },
+    {
+        "Enemy_Name": "Brutal Maulers",
+        "FS": 2,
+        "Armor": 2,
+        "Speed": 1,
+        "Range": 1,
+        "AP": 0,
+        "Keywords": ["ground"]
+    },
+    {
+        "Enemy_Name": "Winged Terrors",
+        "FS": 3,
+        "Armor": 0,
+        "Speed": 3,
+        "Range": 1,
+        "AP": 0,
+        "Keywords": ["fly"]
+    },
+    {
+        "Enemy_Name": "Spore Hurlers",
+        "FS": 2,
+        "Armor": 1,
+        "Speed": 0,
+        "Range": 3,
+        "AP": 0,
+        "Keywords": ["ground"]
+    },
+    {
+        "Enemy_Name": "Shadow Stalkers",
+        "FS": 1,
+        "Armor": 0,
+        "Speed": 1,
+        "Range": 1,
+        "AP": 0,
+        "Keywords": ["ground"]
+    },
+    {
+        "Enemy_Name": "Inferno Behemoths",
+        "FS": 6,
+        "Armor": 1,
+        "Speed": 1,
+        "Range": 1,
+        "AP": 0,
+        "Keywords": ["ground", "air"]
+    },
+    {
+        "Enemy_Name": "Necrotic Swarmers",
+        "FS": 10,
+        "Armor": 0,
+        "Speed": 1,
+        "Range": 1,
+        "AP": 0,
+        "Keywords": ["ground", "heal", "swarm"]
+    },
+    {
+        "Enemy_Name": "Cave Crawlers",
+        "FS": 1,
+        "Armor": 0,
+        "Speed": 10,
+        "Range": 0,
+        "AP": 0,
+        "Keywords": ["ground", "tunnel"]
+    },
+    {
+        "Enemy_Name": "Acid Spitters",
+        "FS": 1,
+        "Armor": 1,
+        "Speed": 1,
+        "Range": 2,
+        "AP": 5,
+        "Keywords": ["ground"]
+    },
+    {
+        "Enemy_Name": "Hive Guardians",
+        "FS": 3,
+        "Armor": 5,
+        "Speed": 1,
+        "Range": [0, 2],  // If these are alternative ranges
+        "AP": [2, 0],  // If these are alternative AP values
+        "Keywords": ["ground", "air"]
+    }
+]

@@ -1,9 +1,14 @@
 {
   "275680682720755713": {
+    "username": "nibaj",
     "units": [
       {
         "name": "TestInfantry",
         "type": "Infantry Unit",
+        "position": {
+          "x": 5,
+          "y": 6
+        },
         "stats": {
           "Unit_Name": "Infantry Unit",
           "FS": 5,
@@ -23,8 +28,12 @@
         }
       },
       {
-        "name": "TestUnit2",
+        "name": "TestEngineer",
         "type": "Combat Engineers",
+        "position": {
+          "x": 5,
+          "y": 6
+        },
         "stats": {
           "Unit_Name": "Combat Engineers",
           "FS": 3,
@@ -48,10 +57,15 @@
     ]
   },
   "276739583398379521": {
+    "username": "mc1cheeseburger",
     "units": [
       {
         "name": "Bomboclaat",
         "type": "Infantry Unit",
+        "position": {
+          "x": 5,
+          "y": 6
+        },
         "stats": {
           "Unit_Name": "Infantry Unit",
           "FS": 5,

@@ -60,21 +60,75 @@ const UPGRADE_COMMAND = {
 // Command for moving a unit
 const MOVE_COMMAND = {
   name: 'move',
-  description: 'Move a unit to a new position',
+  description: 'Move a unit to specified coordinates.',
   options: [
     {
-      type: 3, // STRING type
-      name: 'unit',
-      description: 'The name of the unit',
+      type: 3,  // STRING
+      name: 'unit_name',
+      description: 'The name of the unit to move.',
       required: true,
     },
     {
-      type: 3, // STRING type
-      name: 'position',
-      description: 'The new position (e.g., "2,3")',
+      type: 3,  // STRING
+      name: 'coordinates',
+      description: 'The coordinates to move to in the format x,y.',
+      required: true,
+    }
+  ],
+  type: 1,
+};
+
+const DELETE_UNIT_COMMAND = {
+  name: 'delete',
+  description: 'Delete a unit from your list.',
+  options: [
+    {
+      type: 3, // STRING
+      name: 'unit_name',
+      description: 'The name of the unit to delete.',
       required: true,
     },
   ],
+  type: 1,
+};
+
+const INFO_COMMAND = {
+  name: 'info',
+  description: 'Get information about a user or unit.',
+  options: [
+    {
+      type: 1, // Subcommand
+      name: 'user',
+      description: 'Get information about all units of a specified user.',
+      options: [
+        {
+          type: 6, // USER type
+          name: 'user',
+          description: 'The user to get information about.',
+          required: true,
+        },
+      ],
+    },
+    {
+      type: 1, // Subcommand
+      name: 'unit',
+      description: 'Get information about a specific unit by its name.',
+      options: [
+        {
+          type: 3, // STRING type
+          name: 'unit_name',
+          description: 'The name of the unit to get information about.',
+          required: true,
+        },
+      ],
+    },
+  ],
+  type: 1,
+};
+
+const MAP_COMMAND = {
+  name: 'map',
+  description: 'Get a snapshot of the current map.',
   type: 1,
 };
 
@@ -83,5 +137,9 @@ const ALL_COMMANDS = [
   CREATE_UNIT_COMMAND,
   UPGRADE_COMMAND,
   TEST_COMMAND,
+  MOVE_COMMAND,
+  DELETE_UNIT_COMMAND,
+  INFO_COMMAND,
+  MAP_COMMAND,
 ];
 InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

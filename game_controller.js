@@ -25,7 +25,7 @@ export function loadUnits() {
 }
 
 // Create a new unit for a player
-export function createUnit(playerId, unitType, unitName) {
+export function createUnit(playerId, username, unitName, unitType) {
   const players = loadPlayerData();
   const units = loadUnits();
 
@@ -37,29 +37,119 @@ export function createUnit(playerId, unitType, unitName) {
 
   // Check if the player already exists
   if (!players[playerId]) {
-    players[playerId] = { units: [] };
+    players[playerId] = {
+      username: username,
+      units: []
+    };
+  } else {
+    // Update the username if it already exists
+    players[playerId].username = username;
   }
 
   const playerUnits = players[playerId].units;
 
   // Check if player already has 2 units
   if (playerUnits.length >= 2) {
-    return `You already have the maximum number of units (2).`;
+    return { success: false };
   }
 
   // Create the new unit and add it to the player's unit list
   const newUnit = {
     name: unitName,      // Custom name from the player
     type: unitType,      // Predefined type from units.json
+    position: {
+          x: -1,
+          y: -1
+        },
     stats: selectedUnit, // Inherit stats from the predefined unit
-    equippedItems: [],   // Can add more properties as needed
   };
 
   playerUnits.push(newUnit);
   savePlayerData(players);
 
-  return `Your new unit "${unitName}" of type "${unitType}" has been created successfully!`;
+  return { success: true };
 }
+
+/// Delete a unit from any player's units
+export function deleteUnit(unitName) {
+  const players = JSON.parse(fs.readFileSync('data/players.json', 'utf-8'));
+  let unitFound = false;
+
+  // Loop through all players to find and delete the unit
+  for (const playerId in players) {
+    const player = players[playerId];
+    const unitIndex = player.units.findIndex(unit => unit.name.toLowerCase() === unitName.toLowerCase());
+
+    // If the unit is found, remove it
+    if (unitIndex !== -1) {
+      player.units.splice(unitIndex, 1);
+      unitFound = true;
+      break; // Exit the loop since we've found and deleted the unit
+    }
+  }
+
+  // Save the updated data back to the file if a unit was found and deleted
+  if (unitFound) {
+    fs.writeFileSync('data/players.json', JSON.stringify(players, null, 2));
+  }
+
+  return { success: unitFound };
+}
+
+// Get information about the specified user's units
+export function getUserInfo(userId) {
+  let players;
+
+  try {
+    players = JSON.parse(fs.readFileSync('data/players.json', 'utf-8'));
+  } catch (error) {
+    console.error('Error reading players.json:', error);
+    return { success: false };
+  }
+
+  // Find the player by userId
+  const player = players[userId];
+
+  if (!player || !player.units || player.units.length === 0) {
+    console.error('No units found for user:', userId);
+    return { success: false };
+  }
+
+  // Format the player's units information
+  const unitsInfo = player.units.map(unit => {
+    return `- **${unit.name}**: ${unit.type}, FS: ${unit.stats.FS}, Position: ${unit.position.x}. ${unit.position.y}`;
+  }).join('\n');
+
+  return { success: true, units: unitsInfo };
+}
+// Get information about a unit by its name
+export function getUnitInfo(unitName) {
+  let players;
+
+  try {
+    players = JSON.parse(fs.readFileSync('data/players.json', 'utf-8'));
+  } catch (error) {
+    console.error('Error reading players.json:', error);
+    return { success: false };
+  }
+
+  // Iterate through all players and their units to find the specified unit
+  for (const playerId in players) {
+    const player = players[playerId];
+    const unit = player.units.find(unit => unit.name.toLowerCase() === unitName.toLowerCase());
+
+    if (unit) {
+      // Format the unit's information
+      const unitInfo = `- **Name**: ${unit.name}\n- **Type**: ${unit.type}\n- **Position**: (${unit.position.x}, ${unit.position.y})\n- **FS**: ${unit.stats.FS}\n- **Armor**: ${unit.stats.Armor}\n- **Speed**: ${unit.stats.Speed}\n- **Range**: ${unit.stats.Range}\n- **Upgrade Points**: ${unit.stats.Upgrade_Points}\n- **Special Rule**: ${unit.stats.Special_Rule}\n- **Equipped Equipment**: ${unit.stats.Equipped_Equipment.join(', ') || 'None'}`;
+
+      return { success: true, unitInfo: unitInfo };
+    }
+  }
+
+  // If unit is not found
+  return { success: false };
+}
+
 
 // Save units data to JSON
 function saveUnits(units) {
@@ -183,13 +273,22 @@ export function upgradeUnitWithEquipment(playerId, unitName, equipmentName) {
   return `Successfully upgraded unit "${unitName}" with equipment "${equipmentName}".`;
 }
 
-// Move a unit to a new position
-export function moveUnit(unitName, newPosition) {
-  const units = loadUnits();
-  const unit = units.find(u => u.Unit_Name === unitName);
-  if (!unit) return `Unit ${unitName} not found.`;
+export function updateUnitPosition(playerId, unitName, newQ, newR) {
+  const players = JSON.parse(fs.readFileSync('data/players.json', 'utf-8'));
 
-  unit.Position = newPosition;  // Assuming you store positions as strings like "2,3"
-  saveUnits(units);
-  return `${unitName} moved to position ${newPosition}.`;
+  const player = players[playerId];
+  if (!player) {
+    throw new Error(`Player ${playerId} not found.`);
+  }
+
+  const unit = player.units.find(u => u.name.toLowerCase() === unitName.toLowerCase());
+  if (!unit) {
+    throw new Error(`Unit "${unitName}" not found.`);
+  }
+
+  // Update unit's position in axial coordinates
+  unit.position = { x: newQ, y: newR };
+
+  // Save the updated data back to the file
+  fs.writeFileSync('data/players.json', JSON.stringify(players, null, 2));
 }
