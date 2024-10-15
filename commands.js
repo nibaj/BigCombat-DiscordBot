@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { InstallGlobalCommands } from './utils.js';
-import { loadUnits, loadPlayerData, loadEquipmentData, getPlayerUnits } from './game_controller.js';
+import { loadUnits, loadPlayerData, loadEquipmentData, getPlayerUnits, getEnemyTypes } from './game_controller.js';
 
 // Test command (kept from the original file)
 const TEST_COMMAND = {
@@ -126,6 +126,89 @@ const INFO_COMMAND = {
   type: 1,
 };
 
+const enemyTypes = getEnemyTypes()
+const ENEMY_COMMAND = {
+    name: 'enemy',
+    description: 'Admin command to manage enemies (create, move, attack)',
+    type: 1, // Slash command
+    options: [
+        {
+            name: 'create',
+            description: 'Create a new enemy',
+            type: 1, // Subcommand
+            options: [
+                {
+                    name: 'type',
+                    description: 'The type of enemy to create',
+                    type: 3, // String
+                    required: true,
+                    choices: enemyTypes.map(type => ({
+                                name: type,
+                                value: type
+                            }))
+                },
+                {
+                    name: 'x',
+                    description: 'X coordinate for the enemy',
+                    type: 4, // Integer
+                    required: true
+                },
+                {
+                    name: 'y',
+                    description: 'Y coordinate for the enemy',
+                    type: 4, // Integer
+                    required: true
+                }
+            ]
+        },
+        {
+            name: 'move',
+            description: 'Move an enemy to a new location',
+            type: 1, // Subcommand
+            options: [
+                {
+                    name: 'enemy_id',
+                    description: 'The ID of the enemy to move',
+                    type: 3, // String
+                    required: true
+                },
+                {
+                    name: 'x',
+                    description: 'X coordinate for the new position',
+                    type: 4, // Integer
+                    required: true
+                },
+                {
+                    name: 'y',
+                    description: 'Y coordinate for the new position',
+                    type: 4, // Integer
+                    required: true
+                }
+            ]
+        },
+        {
+            name: 'attack',
+            description: 'Perform an attack with an enemy',
+            type: 1, // Subcommand
+            options: [
+                {
+                    name: 'enemy_id',
+                    description: 'The ID of the enemy attacking',
+                    type: 3, // String
+                    required: true
+                },
+                {
+                    name: 'target_unit',
+                    description: 'The ID of the player unit being attacked',
+                    type: 3, // String
+                    required: true
+                }
+            ]
+        }
+    ]
+};
+
+
 const MAP_COMMAND = {
   name: 'map',
   description: 'Get a snapshot of the current map.',
@@ -140,6 +223,7 @@ const ALL_COMMANDS = [
   MOVE_COMMAND,
   DELETE_UNIT_COMMAND,
   INFO_COMMAND,
+  ENEMY_COMMAND,
   MAP_COMMAND,
 ];
 InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

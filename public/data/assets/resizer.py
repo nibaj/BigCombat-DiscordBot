@@ -3,21 +3,23 @@ import os
 
 # Paths to your local images
 image_paths = [
-    'units/Combat Engineers.png',
-    'units/Combat Medical Unit.png',
-    'units/Infantry Unit.png',
-    'units/Irregular Unit.png',
-    'units/Mechanized Infantry.png',
-    'units/Power Armored Infantry.png',
-    'units/Sappers.png',
-    'units/Special Forces.png'
+    'enemies/Acid Spitters.png',
+    'enemies/Brutal Maulers.png',
+    'enemies/Cave Crawlers.png',
+    'enemies/Hive Guardian.png',
+    'enemies/Inferno Behemoths.png',
+    'enemies/Necrotic Swarmers.png',
+    'enemies/Ravenous Gnashers.png',
+    'enemies/Shadow Stalkers.png',
+    'enemies/Spore Hurlers.png',
+    'enemies/Winged Terrors.png'
 ]
 
 # Set the desired size for all images (e.g., 500x500 pixels)
 desired_size = (500, 500)
 
 # Output directory for resized images
-output_dir = 'units/'
+output_dir = 'enemies/'
 os.makedirs(output_dir, exist_ok=True)
 
 # Resize and save each image

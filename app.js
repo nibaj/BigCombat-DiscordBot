@@ -1,7 +1,10 @@
 import 'dotenv/config';
 import express from 'express';
 import { InteractionType, InteractionResponseType, verifyKeyMiddleware } from 'discord-interactions';
-import { createUnit, deleteUnit, getUserInfo, getUnitInfo, getPlayerUnits, getAvailableEquipment, upgradeUnitWithEquipment, updateUnitPosition } from './game_controller.js';  // Assuming game logic in game_controller.js
+import { createUnit, deleteUnit, getUserInfo, getUnitInfo, getPlayerUnits,
+    getAvailableEquipment, upgradeUnitWithEquipment, updateUnitPosition, isWithinReach,
+    createLiveEnemy, updateEnemyPosition, loadEnemiesData, updateEnemyStats, loadPlayerData
+    } from './game_controller.js';  // Assuming game logic in game_controller.js
 import { WebSocketServer } from 'ws';
 import fs from 'fs';
 import path from 'path';
@@ -9,6 +12,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const link = 'https://dc3e-2001-7e8-f606-fc01-5cc2-b0b1-89c9-9012.ngrok-free.app'
 
 // Create an express app
 const app = express();
@@ -85,7 +89,7 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
       const isAdmin = member.roles && member.roles.includes(adminRoleId);
 
       // List of commands restricted to admins
-      const adminCommands = ['test', 'delete'];
+      const adminCommands = ['test', 'delete', 'enemy'];
 
       // Restrict command to admins if it's in the adminCommands list
       if (adminCommands.includes(commandName) && !isAdmin) {
@@ -134,6 +138,7 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
           });
         }
       }
+
       if (commandName === 'delete') {
         const unitName = data.options.find(opt => opt.name === 'unit_name').value;
 
@@ -156,6 +161,80 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
               flags: 64
             },
           });
+        }
+      }
+
+      if (commandName === 'enemy') {
+        const subCommand = data.options[0].name; // Get the subcommand ('create', 'move', or 'attack')
+
+        if (subCommand === 'create') {
+          const type = data.options[0].options.find(opt => opt.name === 'type').value;
+          const x = data.options[0].options.find(opt => opt.name === 'x').value;
+          const y = data.options[0].options.find(opt => opt.name === 'y').value;
+
+          // Call a function to create the enemy
+          const result = createLiveEnemy(type, {x, y});
+
+          if (result.success) {
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `✅ Enemy ${type} created at (${x}, ${y}) with ID ${result.enemyID}.`,
+              },
+            });
+          } else {
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `❌ Failed to create enemy.`,
+              },
+            });
+          }
+        } else if (subCommand === 'move') {
+          const enemyID = data.options[0].options.find(opt => opt.name === 'enemy_id').value;
+          const x = data.options[0].options.find(opt => opt.name === 'x').value;
+          const y = data.options[0].options.find(opt => opt.name === 'y').value;
+
+          // Call a function to move the enemy
+          const result = updateEnemyPosition(enemyID, {x, y});
+
+          if (result.success) {
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `✅ Enemy ${enemyID} moved to (${x}, ${y}).`,
+              },
+            });
+          } else {
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: result.message,
+              },
+            });
+          }
+        } else if (subCommand === 'attack') {
+          const enemyID = data.options[0].options.find(opt => opt.name === 'enemy_id').value;
+          const targetUnitID = data.options[0].options.find(opt => opt.name === 'target_unit').value;
+
+          // Call a function to execute the attack
+          const result = executeEnemyAttack(enemyID, targetUnitID);
+
+          if (result.success) {
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `⚔️ Enemy ${enemyID} attacked unit ${targetUnitID}. ${result.details}`,
+              },
+            });
+          } else {
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `❌ Failed to execute attack.`,
+              },
+            });
+          }
         }
       }
 
@@ -275,7 +354,7 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
         return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-                content: '🌍 View the interactive map here: [Click to View](https://e4cb-2001-7e8-f606-fc01-b1bb-7d0b-5b58-6046.ngrok-free.app/map-view)',
+                content: '🌍 View the interactive map here: [Click to View]('+link+'/map-view)',
             }
         });
       }
@@ -408,14 +487,6 @@ app.listen(PORT, () => {
 
 // https://www.redblobgames.com/grids/hexagons-v1/
 
-// Converts even-q offset coordinates to cube coordinates
-function evenqToCube(hex) {
-  const x = hex.col;
-  const z = hex.row - Math.floor((hex.col + (hex.col & 1)) / 2);
-  const y = -x - z;
-  return { x, y, z };
-}
-
 // Converts cube coordinates back to even-q offset coordinates
 function cubeToEvenq(cube) {
   const col = cube.x;
@@ -455,36 +526,6 @@ function evenqOffsetNeighbor(hex, direction) {
   const parity = hex.col & 1; // 0 for even, 1 for odd columns
   const dir = evenqDirections[parity][direction];
   return { col: hex.col + dir.col, row: hex.row + dir.row };
-}
-
-// Calculate distance between two hexes using cube coordinates
-function offsetDistance(a, b) {
-  const ac = evenqToCube(a);
-  const bc = evenqToCube(b);
-  return cubeDistance(ac, bc);
-}
-
-// Cube distance calculation
-function cubeDistance(cube1, cube2) {
-  return Math.max(
-    Math.abs(cube1.x - cube2.x),
-    Math.abs(cube1.y - cube2.y),
-    Math.abs(cube1.z - cube2.z)
-  );
-}
-function isWithinReach(currentQ, currentR, targetQ, targetR, speed) {
-  // Define current and target hexes
-  const currentHex = { col: currentQ, row: currentR };
-  const targetHex = { col: targetQ, row: targetR };
-
-  // Calculate the distance using offset coordinates
-  const distance = offsetDistance(currentHex, targetHex);
-
-  console.log(`Current Hex: (${currentQ}, ${currentR}), Target Hex: (${targetQ}, ${targetR})`);
-  console.log(`Calculated distance: ${distance}, Speed: ${speed}`);
-
-  // Return whether the distance is within the unit's speed
-  return distance <= speed;
 }
 
 // Function to check if a user’s unit can execute a command and update its timestamp

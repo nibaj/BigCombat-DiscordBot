@@ -85,8 +85,8 @@
         "FS": 3,
         "Armor": 5,
         "Speed": 1,
-        "Range": [0, 2],  // If these are alternative ranges
-        "AP": [2, 0],  // If these are alternative AP values
+        "Range": [0, 2],
+        "AP": [2, 0],
         "Keywords": ["ground", "air"]
     }
 ]

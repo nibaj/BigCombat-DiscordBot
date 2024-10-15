@@ -292,3 +292,164 @@ export function updateUnitPosition(playerId, unitName, newQ, newR) {
   // Save the updated data back to the file
   fs.writeFileSync('public/data/players.json', JSON.stringify(players, null, 2));
 }
+
+// https://www.redblobgames.com/grids/hexagons-v1/
+export function isWithinReach(currentQ, currentR, targetQ, targetR, speed) {
+  // Define current and target hexes
+  const currentHex = { col: currentQ, row: currentR };
+  const targetHex = { col: targetQ, row: targetR };
+
+  // Calculate the distance using offset coordinates
+  const distance = offsetDistance(currentHex, targetHex);
+
+  console.log(`Current Hex: (${currentQ}, ${currentR}), Target Hex: (${targetQ}, ${targetR})`);
+  console.log(`Calculated distance: ${distance}, Speed: ${speed}`);
+
+  // Return whether the distance is within the unit's speed
+  return distance <= speed;
+}
+// Calculate distance between two hexes using cube coordinates
+function offsetDistance(a, b) {
+  const ac = evenqToCube(a);
+  const bc = evenqToCube(b);
+  return cubeDistance(ac, bc);
+}
+// Cube distance calculation
+function cubeDistance(cube1, cube2) {
+  return Math.max(
+    Math.abs(cube1.x - cube2.x),
+    Math.abs(cube1.y - cube2.y),
+    Math.abs(cube1.z - cube2.z)
+  );
+}
+// Converts even-q offset coordinates to cube coordinates
+function evenqToCube(hex) {
+  const x = hex.col;
+  const z = hex.row - Math.floor((hex.col + (hex.col & 1)) / 2);
+  const y = -x - z;
+  return { x, y, z };
+}
+
+// Path to liveEnemies.json
+const enemiesFilePath = 'public/data/liveEnemies.json';
+const predefinedEnemiesPath = 'public/data/enemies.json';
+
+// Load live enemies data
+export function loadEnemiesData() {
+    if (fs.existsSync(enemiesFilePath)) {
+        return JSON.parse(fs.readFileSync(enemiesFilePath, 'utf8'));
+    } else {
+        return {};
+    }
+}
+
+// Save live enemies data
+export function saveEnemiesData(data) {
+    fs.writeFileSync(enemiesFilePath, JSON.stringify(data, null, 2));
+}
+
+// Load predefined enemies from enemies.json
+function loadPredefinedEnemies() {
+    try {
+        return JSON.parse(fs.readFileSync(predefinedEnemiesPath, 'utf8'));
+    } catch (err) {
+        console.error('Error loading predefined enemies:', err);
+        return {};
+    }
+}
+
+// Function to create a live enemy based on predefined enemies
+export function createLiveEnemy(type, position) {
+    const predefinedEnemies = loadPredefinedEnemies();
+
+    // Ensure predefinedEnemies is an array
+    if (!Array.isArray(predefinedEnemies)) {
+        return { success: false, message: 'Enemy data is invalid.' };
+    }
+
+    // Adjust to search by "Enemy_Name"
+    const enemyData = predefinedEnemies.find(enemy => enemy.Enemy_Name === type);
+    if (!enemyData) {
+        return { success: false, message: `Enemy type "${type}" not found.` };
+    }
+
+    // Generate a unique ID for the enemy
+    const enemyID = `enemy_${Date.now()}`;
+
+    const newEnemy = {
+        id: generateUniqueEnemyID(enemyData.Enemy_Name),
+        type: enemyData.Enemy_Name,
+        position: {
+            x: position.x,
+            y: position.y
+        },
+        stats: {
+            FS: enemyData.FS,
+            Armor: enemyData.Armor,
+            Speed: enemyData.Speed,
+            Range: enemyData.Range,
+            AP: enemyData.AP,
+            Keywords: enemyData.Keywords
+        }
+    };
+
+    // Load live enemies from the liveEnemies.json file
+    const liveEnemies = loadEnemiesData();
+    liveEnemies[newEnemy.id] = newEnemy;
+
+    saveEnemiesData(liveEnemies);
+
+    return { success: true, enemyData: newEnemy, enemyID: newEnemy.id };
+}
+
+// Get a list of all available enemy types
+export function getEnemyTypes() {
+    const predefinedEnemies = loadPredefinedEnemies();
+    // Adjust to return "Enemy_Name"
+    return predefinedEnemies.map(enemy => enemy.Enemy_Name);
+}
+// Generate unique enemy ID
+function generateUniqueEnemyID(type) {
+    // Use a combination of timestamp and a random number to ensure uniqueness
+    return type+`_${Math.floor(Math.random() * 1000)}`;
+}
+// Example function to update an enemy's position
+export function updateEnemyPosition(enemyID, newPosition) {
+    const liveEnemies = loadEnemiesData();
+
+    const enemy = liveEnemies[enemyID];
+    if (!enemy) {
+        return { success: false, message: `Enemy with ID "${enemyID}" not found.` };
+    }
+
+    // Get the enemy's current position and speed
+    const currentPosition = enemy.position;
+    const speed = enemy.stats.Speed;
+
+    if (!speed) {
+        return { success: false, message: `Enemy with ID ${enemyID} does not have a defined speed.` };
+    }
+
+    if (isWithinReach(currentPosition.x, currentPosition.y, newPosition.x, newPosition.y, speed)) {
+        // Update enemy's position
+        enemy.position = newPosition;
+        saveEnemiesData(liveEnemies); // Save updated enemy positions
+        return { success: true, newPosition: newPosition };
+    } else {
+        return { success: false, message: `Target position (${newPosition.x}, ${newPosition.y}) is too far. Enemy can only move ${speed} hexes.` };
+    }
+}
+
+// Example function to update an enemy's stats (e.g., after taking damage)
+export function updateEnemyStats(enemyID, updatedStats) {
+    const liveEnemies = loadEnemiesData();
+
+    if (!liveEnemies[enemyID]) {
+        return { success: false, message: `Enemy with ID "${enemyID}" not found.` };
+    }
+
+    Object.assign(liveEnemies[enemyID].stats, updatedStats);
+    saveEnemiesData(liveEnemies);
+
+    return { success: true };
+}

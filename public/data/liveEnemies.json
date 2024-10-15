@@ -1,0 +1,56 @@
+{
+  "Ravenous Gnashers_87": {
+    "id": "Ravenous Gnashers_87",
+    "type": "Ravenous Gnashers",
+    "position": {
+      "x": 1,
+      "y": 3
+    },
+    "stats": {
+      "FS": 1,
+      "Armor": 0,
+      "Speed": 2,
+      "Range": 1,
+      "AP": 0,
+      "Keywords": [
+        "ground"
+      ]
+    }
+  },
+  "Ravenous Gnashers_780": {
+    "id": "Ravenous Gnashers_780",
+    "type": "Ravenous Gnashers",
+    "position": {
+      "x": 4,
+      "y": 7
+    },
+    "stats": {
+      "FS": 1,
+      "Armor": 0,
+      "Speed": 2,
+      "Range": 1,
+      "AP": 0,
+      "Keywords": [
+        "ground"
+      ]
+    }
+  },
+  "Winged Terrors_626": {
+    "id": "Winged Terrors_626",
+    "type": "Winged Terrors",
+    "position": {
+      "x": 8,
+      "y": 3
+    },
+    "stats": {
+      "FS": 3,
+      "Armor": 0,
+      "Speed": 3,
+      "Range": 1,
+      "AP": 0,
+      "Keywords": [
+        "fly"
+      ]
+    }
+  }
+}
