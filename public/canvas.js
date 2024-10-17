@@ -54,6 +54,17 @@ const unitImages = {
     'Power Armored Infantry': '/data/assets/units/Power Armored Infantry.png',
     'Sappers': '/data/assets/units/Sappers.png',
     'Special Forces': '/data/assets/units/Special Forces.png',
+// Enemies
+    'Acid Spitters': '/data/assets/enemies/Acid Spitters.png',
+    'Brutal Maulers': '/data/assets/enemies/Brutal Maulers.png',
+    'Cave Crawlers': '/data/assets/enemies/Cave Crawlers.png',
+    'Hive Guardian': '/data/assets/enemies/Hive Guardian.png',
+    'Inferno Behemoths': '/data/assets/enemies/Inferno Behemoths.png',
+    'Necrotic Swarmers': '/data/assets/enemies/Necrotic Swarmers.png',
+    'Ravenous Gnashers': '/data/assets/enemies/Ravenous Gnashers.png',
+    'Shadow Stalkers': '/data/assets/enemies/Shadow Stalkers.png',
+    'Spore Hurlers': '/data/assets/enemies/Spore Hurlers.png',
+    'Winged Terrors': '/data/assets/enemies/Winged Terrors.png',
 };
 
 // Object to hold preloaded images
@@ -74,7 +85,8 @@ fetch('/data/players.json')
                         name: unit.name,
                         type: unit.type,
                         FS: unit.stats.FS,
-                        Armor: unit.stats.Armor
+                        Armor: unit.stats.Armor,
+                        Keywords: unit.stats.Keywords
                     });
                 });
             }
@@ -85,6 +97,29 @@ fetch('/data/players.json')
         });
     })
     .catch(error => console.error('Error loading unit data:', error));
+
+// Load enemies data from the JSON file
+let liveEnemies = [];
+fetch('/data/liveEnemies.json')
+    .then(response => response.json())
+    .then(data => {
+        for (const enemyId in data) {
+            const enemy = data[enemyId];
+            if (enemy && enemy.position) {
+                liveEnemies.push({
+                    id: enemy.id,
+                    x: enemy.position.x,
+                    y: enemy.position.y,
+                    name: enemy.id,
+                    type: enemy.type,
+                    FS: enemy.stats.FS,
+                    Armor: enemy.stats.Armor
+                });
+            }
+        }
+    })
+    .catch(error => console.error('Error loading unit data:', error));
+
 
 // Preload unit images
 function preloadImages(callback) {
@@ -223,7 +258,10 @@ function drawUnits(r) {
     // Create a map to store units in each hex
     const hexUnitMap = {};
 
-    // Populate the hexUnitMap
+    // Store only units with "Infantry" keyword for vision
+    const visionUnits = units.filter(unit => unit.Keywords && unit.Keywords.includes("Infantry"));
+
+    // Populate the hexUnitMap for player units
     units.forEach((unit) => {
         const key = `${unit.x},${unit.y}`; // Use hex coordinates as the key
         if (!hexUnitMap[key]) {
@@ -232,7 +270,27 @@ function drawUnits(r) {
         hexUnitMap[key].push(unit);
     });
 
-    // Draw each unit
+    liveEnemies.forEach((enemy) => {
+        const enemyPos = { x: enemy.x, y: enemy.y };
+        let isVisible = false;
+
+        // Check if any "Infantry" units are within 2 hexes of this enemy
+        visionUnits.forEach(unit => {
+            const unitPos = { x: unit.x, y: unit.y };
+            if (isWithinRange(unitPos, enemyPos)) {
+                isVisible = true;
+            }
+        });
+        if (isVisible) {
+            const key = `${enemy.x},${enemy.y}`; // Use hex coordinates as the key
+            if (!hexUnitMap[key]) {
+                hexUnitMap[key] = [];
+            }
+            hexUnitMap[key].push(enemy);
+        }
+    });
+
+    // Now, draw player units
     Object.keys(hexUnitMap).forEach((hexKey) => {
         const [hexX, hexY] = hexKey.split(',').map(Number);
         const unitList = hexUnitMap[hexKey];
@@ -241,41 +299,47 @@ function drawUnits(r) {
         const hexCenterX = hexX * 1.5 * r;
         const hexCenterY = hexY * r * Math.sqrt(3) + (hexX % 2) * (r * Math.sqrt(3) / 2);
 
-        // Distribute units in a circular pattern around the hex center
+        // Distribute player units in the hex
         unitList.forEach((unit, index) => {
-            const angle = (index / unitList.length) * 2 * Math.PI; // Evenly distribute units in a circle
-            const offsetX = Math.cos(angle) * r * 0.3; // Adjust offset magnitude
-            const offsetY = Math.sin(angle) * r * 0.3; // Adjust offset magnitude
-
-            // Calculate the final position for this unit
-            const unitX = hexCenterX + offsetX;
-            const unitY = hexCenterY + offsetY;
-
-            // Draw the unit image if available
-            const unitImage = loadedImages[unit.type];
-            if (unitImage) {
-                const imgSize = r; // Size of the image
-                ctx.drawImage(unitImage, unitX - imgSize / 2, unitY - imgSize / 2, imgSize, imgSize);
-            } else {
-                // Draw a placeholder circle if the image is not available
-                ctx.beginPath();
-                ctx.arc(unitX, unitY, r * 0.3, 0, 2 * Math.PI);
-                ctx.fillStyle = "red";
-                ctx.fill();
-            }
-
-            // Check if the mouse is hovering over this unit
-            const dx = mouseX - unitX;
-            const dy = mouseY - unitY;
-            if (Math.sqrt(dx * dx + dy * dy) < r) {
-                hoveredUnit = unit; // Store the hovered unit
-            }
+            drawUnitAt(unit, index, unitList, r, hexCenterX, hexCenterY);
         });
     });
 
     // Draw information for the hovered unit
     if (hoveredUnit) {
         drawUnitInfo(hoveredUnit, r);
+    }
+}
+
+// Function to draw a unit at a given hex center with optional distribution
+function drawUnitAt(unit, index, unitList, r, hexCenterX, hexCenterY) {
+    // Distribute units in a circular pattern around the hex center
+    const angle = (index / unitList.length) * 2 * Math.PI; // Evenly distribute units in a circle
+    const offsetX = Math.cos(angle) * r * 0.3; // Adjust offset magnitude
+    const offsetY = Math.sin(angle) * r * 0.3; // Adjust offset magnitude
+
+    // Calculate the final position for this unit
+    const unitX = hexCenterX + offsetX;
+    const unitY = hexCenterY + offsetY;
+
+    // Draw the unit image if available
+    const unitImage = loadedImages[unit.type];
+    if (unitImage) {
+        const imgSize = r; // Size of the image
+        ctx.drawImage(unitImage, unitX - imgSize / 2, unitY - imgSize / 2, imgSize, imgSize);
+    } else {
+        // Draw a placeholder circle if the image is not available
+        ctx.beginPath();
+        ctx.arc(unitX, unitY, r * 0.3, 0, 2 * Math.PI);
+        ctx.fillStyle = "red";
+        ctx.fill();
+    }
+
+    // Check if the mouse is hovering over this unit
+    const dx = mouseX - unitX;
+    const dy = mouseY - unitY;
+    if (Math.sqrt(dx * dx + dy * dy) < r) {
+        hoveredUnit = unit; // Store the hovered unit
     }
 }
 
@@ -438,3 +502,36 @@ function sendCanvasImage() {
     console.log('Canvas image data sent over WebSocket.');
 }
 
+// Convert offset (even-q) coordinates to cube coordinates
+function offsetToCube(col, row) {
+    let x = col;
+    let z = row - (col - (col & 1)) / 2;
+    let y = -x - z;
+    return { x, y, z };
+}
+
+// Calculate distance between two hexes in cube coordinates
+function hexDistance(a, b) {
+    return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z));
+}
+
+// Check if the enemy is within 2 hexes of any player unit
+function isWithinRange(playerUnits, enemy, range = 2) {
+    const enemyCube = offsetToCube(enemy.x, enemy.y);
+
+    if( typeof playerUnits == "object"){
+        const unitCube = offsetToCube(playerUnits.x, playerUnits.y);
+        if (hexDistance(enemyCube, unitCube) <= range) {
+            return true;  // Enemy is within range
+        }
+    } else {
+        for (const unit of playerUnits) {
+            const unitCube = offsetToCube(unit.x, unit.y);
+            if (hexDistance(enemyCube, unitCube) <= range) {
+                return true;  // Enemy is within range
+            }
+        }
+    }
+
+    return false;  // Enemy is not in range of any player unit
+}
