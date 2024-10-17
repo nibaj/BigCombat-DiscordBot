@@ -43,6 +43,13 @@ const SCROLL_SENSITIVITY = 0.0005;
 let mouseX = 0;
 let mouseY = 0;
 let hoveredUnit = null;
+// Checkbox element
+const toggleStatsCheckbox = document.getElementById('toggleStats');
+let showUnitNames = false;
+const toggleNamesCheckbox = document.getElementById('toggleNames');
+
+const visionRange = 2
+
 
 // Unit images paths
 const unitImages = {
@@ -227,14 +234,14 @@ function drawHexagonGrid(r, numRows) {
         for (let j = 0; j < numRows; j++) {
             const x = i * 1.5 * r;
             const y = j * hexHeight + (i % 2) * (hexHeight / 2);
-            drawHexagon(x, y, r, i, j);
+            const isVisible = isHexVisible(i, j);
+            drawHexagon(x, y, r, i, j, isVisible);
         }
     }
 }
 
-
 // Function to draw a single hexagon
-function drawHexagon(a, b, r, x, y) {
+function drawHexagon(a, b, r, x, y, isVisible = true) {
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
         ctx.lineTo(
@@ -249,6 +256,28 @@ function drawHexagon(a, b, r, x, y) {
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.fillText(`${x},${y}`, a,  b - r * 0.8);
+
+    if (!isVisible) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent black
+        ctx.fill();
+    }
+}
+function isHexVisible(hexX, hexY) {
+    hex ={"x":hexX,"y":hexY}
+    for (let unit of units) {
+        if (unit.Keywords.includes("Infantry")) {
+            if(isWithinRange(unit,hex)){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function getHexDistance(x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    return Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dx + dy)); // Hexagonal distance calculation
 }
 
 // Function to draw units on the grid
@@ -335,6 +364,13 @@ function drawUnitAt(unit, index, unitList, r, hexCenterX, hexCenterY) {
         ctx.fill();
     }
 
+    if (toggleStatsCheckbox.checked) {
+        drawStats(unit, unitX, unitY, r);
+    }
+    if (toggleNamesCheckbox.checked) {
+        drawNames(unit, unitX, unitY, r, index, unitList.length);
+    }
+
     // Check if the mouse is hovering over this unit
     const dx = mouseX - unitX;
     const dy = mouseY - unitY;
@@ -375,6 +411,57 @@ function drawUnitInfo(unit, r) {
 
 }
 
+// Function to draw unit FS and Armor stats with smaller, closer circles
+function drawStats(unit, unitX, unitY, r) {
+    const fsText = `${unit.FS}`;
+    const armorText = `${unit.Armor}`;
+
+    // Adjust circle size and spacing
+    const circleRadius = r * 0.15; // Smaller circle size
+    const circleSpacing = circleRadius; // Reduce spacing between circles
+
+    // Draw green circle for FS (Field Strength)
+    ctx.beginPath();
+    ctx.arc(unitX - circleSpacing, unitY - r * 0.5, circleRadius, 0, 2 * Math.PI); // FS circle
+    ctx.fillStyle = "green";
+    ctx.fill();
+
+    // Draw gray circle for Armor
+    ctx.beginPath();
+    ctx.arc(unitX + circleSpacing, unitY - r * 0.5, circleRadius, 0, 2 * Math.PI); // Armor circle
+    ctx.fillStyle = "gray";
+    ctx.fill();
+
+    // Draw FS text in the center of the green circle
+    ctx.font = `${circleRadius * 1.2}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "white"; // White text color for contrast
+    ctx.fillText(fsText, unitX - circleSpacing, unitY - r * 0.5);
+
+    // Draw Armor text in the center of the gray circle
+    ctx.fillText(armorText, unitX + circleSpacing, unitY - r * 0.5);
+}
+
+function drawNames(unit, x, y, r, index, totalUnits) {
+    ctx.font = `${r * 0.3}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const offsetY = (index / totalUnits) * 20 - 5;
+
+    const unitInfoText = `${unit.name}`;
+    // Calculate the background size based on text metrics
+    const textWidth = ctx.measureText(unitInfoText).width;
+    const textHeight = r * 0.6; // Adjust as needed for spacing
+
+    // Set the background properties
+    ctx.fillStyle = "rgba(51, 255, 51, 1)"; // Semi-transparent black
+    ctx.fillRect(x - textWidth / 2, y - r * 0.1 - 5 + offsetY, textWidth, textHeight - 10);
+
+    ctx.fillStyle = "black";
+    ctx.fillText(unit.name, x, y - r * 0.1 + offsetY);
+
+}
 
 // Gets the relevant location from a mouse or single touch event
 function getEventLocation(e) {
@@ -516,7 +603,7 @@ function hexDistance(a, b) {
 }
 
 // Check if the enemy is within 2 hexes of any player unit
-function isWithinRange(playerUnits, enemy, range = 2) {
+function isWithinRange(playerUnits, enemy, range = visionRange) {
     const enemyCube = offsetToCube(enemy.x, enemy.y);
 
     if( typeof playerUnits == "object"){
