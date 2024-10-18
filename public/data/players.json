@@ -1,6 +1,8 @@
 {
   "275680682720755713": {
     "username": "nibaj",
+    "pay": 0,
+    "playerLimit": 2,
     "units": [
       {
         "name": "TestInfantry",
@@ -58,6 +60,8 @@
   },
   "276739583398379521": {
     "username": "mc1cheeseburger",
+    "pay": 0,
+    "playerLimit": 2,
     "units": [
       {
         "name": "Bomboclaat",

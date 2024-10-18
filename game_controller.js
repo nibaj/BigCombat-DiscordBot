@@ -39,6 +39,8 @@ export function createUnit(playerId, username, unitName, unitType) {
   if (!players[playerId]) {
     players[playerId] = {
       username: username,
+      pay: 0,
+      unitLimit: 2,
       units: []
     };
   } else {
@@ -49,8 +51,8 @@ export function createUnit(playerId, username, unitName, unitType) {
   const playerUnits = players[playerId].units;
 
   // Check if player already has 2 units
-  if (playerUnits.length >= 2) {
-    return { success: false };
+  if (playerUnits.length >= players[playerId].playerLimit) {
+    return { success: false, message: `You have reached your unit limit of ${players[playerId].playerLimit}.` };
   }
 
   // Create the new unit and add it to the player's unit list
