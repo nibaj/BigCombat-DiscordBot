@@ -2,35 +2,32 @@
 // Create a WebSocket connection to the server
 const socket = new WebSocket('wss://e4cb-2001-7e8-f606-fc01-b1bb-7d0b-5b58-6046.ngrok-free.app');
 
-// Handle the connection open event
+// Handle WebSocket connection events
 socket.onopen = () => {
     console.log('Connected to WebSocket server.');
 };
 
-// Handle messages received from the server
 socket.onmessage = (event) => {
     console.log('Message from server:', event.data);
     if (event.data === 'sendCanvasImage') {
-        console.log('Received command to send canvas image.');
         sendCanvasImage(); // Call the function to send the canvas image to the server
     }
 };
 
-// Handle the connection close event
 socket.onclose = () => {
     console.log('Disconnected from WebSocket server.');
 };
 
-// Handle errors
 socket.onerror = (error) => {
     console.error('WebSocket error:', error);
 };
 
-
+// Canvas and context setup
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-const backgroundImageSrc = "map.png"; // Path to your background image
+// Map and grid configuration
+const backgroundImageSrc = "map.png"; // Path to the background image
 const desiredRows = 13; // Number of rows for the hex grid
 
 // Zoom and Pan Variables
@@ -39,19 +36,21 @@ let cameraZoom = 1;
 const MAX_ZOOM = 5;
 const MIN_ZOOM = 1;
 const SCROLL_SENSITIVITY = 0.0005;
-// Unit information
+
+// Mouse and unit tracking
 let mouseX = 0;
 let mouseY = 0;
 let hoveredUnit = null;
-// Checkbox element
+
+// Checkbox elements to toggle display options
 const toggleStatsCheckbox = document.getElementById('toggleStats');
 let showUnitNames = false;
 const toggleNamesCheckbox = document.getElementById('toggleNames');
 
-const visionRange = 2
+// Vision range for units
+const visionRange = 2;
 
-
-// Unit images paths
+// Paths to unit images
 const unitImages = {
     'Combat Engineers': '/data/assets/units/Combat Engineers.png',
     'Combat Medical Unit': '/data/assets/units/Combat Medical Unit.png',
@@ -61,7 +60,7 @@ const unitImages = {
     'Power Armored Infantry': '/data/assets/units/Power Armored Infantry.png',
     'Sappers': '/data/assets/units/Sappers.png',
     'Special Forces': '/data/assets/units/Special Forces.png',
-// Enemies
+    // Enemies
     'Acid Spitters': '/data/assets/enemies/Acid Spitters.png',
     'Brutal Maulers': '/data/assets/enemies/Brutal Maulers.png',
     'Cave Crawlers': '/data/assets/enemies/Cave Crawlers.png',
@@ -77,7 +76,7 @@ const unitImages = {
 // Object to hold preloaded images
 const loadedImages = {};
 
-// Load unit data from the JSON file
+// Fetch and load player unit data
 let units = [];
 fetch('/data/players.json')
     .then(response => response.json())
@@ -98,14 +97,11 @@ fetch('/data/players.json')
                 });
             }
         }
-
-        preloadImages(() => {
-            loadBackgroundImage(); // Background image is loaded, and then `draw()` will be called inside.
-        });
+        preloadImages(loadBackgroundImage); // Preload images, then load the background
     })
     .catch(error => console.error('Error loading unit data:', error));
 
-// Load enemies data from the JSON file
+// Fetch and load enemy data
 let liveEnemies = [];
 fetch('/data/liveEnemies.json')
     .then(response => response.json())
@@ -125,46 +121,38 @@ fetch('/data/liveEnemies.json')
             }
         }
     })
-    .catch(error => console.error('Error loading unit data:', error));
-
+    .catch(error => console.error('Error loading enemy data:', error));
 
 // Preload unit images
 function preloadImages(callback) {
     let loadedCount = 0;
     const totalImages = Object.keys(unitImages).length;
 
+    // Load each image asynchronously
     for (const [unitType, src] of Object.entries(unitImages)) {
         const img = new Image();
         img.src = src;
 
-        img.onload = () => {
+        // Once an image is loaded or fails to load, increment the count
+        img.onload = img.onerror = () => {
             loadedImages[unitType] = img;
             loadedCount++;
             if (loadedCount === totalImages) {
-                callback();
-            }
-        };
-
-        img.onerror = () => {
-            console.error(`Failed to load image for unit: ${unitType}, source: ${src}`);
-            loadedCount++;
-            if (loadedCount === totalImages) {
-                callback();
+                callback(); // All images loaded, proceed to the next step
             }
         };
     }
 }
 
-// Global variable for the background image
+// Load the background image
 let backgroundImage;
 
-// Load the background image
 function loadBackgroundImage() {
     backgroundImage = new Image();
     backgroundImage.src = backgroundImageSrc;
 
     backgroundImage.onload = () => {
-        draw(); // Ensure we draw the canvas once the background is loaded
+        draw(); // Start drawing once the background image is loaded
     };
 
     backgroundImage.onerror = () => {
@@ -172,75 +160,60 @@ function loadBackgroundImage() {
     };
 }
 
-// Function to draw the background image
+// Draw the background on the canvas
 function drawBackground() {
     if (backgroundImage) {
         ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
     }
 }
 
-// Main draw function
+// Main draw function to render the entire canvas
 function draw() {
-    // Ensure the background image has been loaded before drawing
-    if (!backgroundImage || !backgroundImage.width || !backgroundImage.height) {
-        return; // Exit the draw function if the image is not loaded
-    }
-
-    // Set canvas size to 90% of the window's dimensions
     const canvasWidth = window.innerWidth * 0.9;
-
-    // Calculate canvas height based on the background image's aspect ratio
     const aspectRatio = backgroundImage.width / backgroundImage.height;
     const canvasHeight = canvasWidth / aspectRatio;
 
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
 
-    // Clear the canvas
+    // Clear the canvas before redrawing
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Apply transformations for zoom and panning
-    ctx.save();  // Save the current context state
+    // Save the context state for zoom and pan transformations
+    ctx.save();
     ctx.translate(cameraOffset.x, cameraOffset.y);
     ctx.scale(cameraZoom, cameraZoom);
 
-    // Draw the background (apply transformations for zoom and panning)
-    drawBackground();
+    drawBackground(); // Draw the background
 
-    // Calculate hex size based on the canvas height and the desired number of rows
     const hexHeight = canvas.height / desiredRows;
-    const r = hexHeight / Math.sqrt(3);  // Hex size to fit the grid within the canvas
+    const r = hexHeight / Math.sqrt(3);
 
-    // Draw the hexagon grid on top of the background
-    drawHexagonGrid(r, desiredRows);
+    drawHexagonGrid(r, desiredRows); // Draw hex grid
+    drawUnits(r); // Draw player units and enemies
+    ctx.restore(); // Restore the context state after transformations
 
-    // Draw the units
-    drawUnits(r);
-
-    ctx.restore();  // Restore the context to its original state
-    requestAnimationFrame(draw);
+    requestAnimationFrame(draw); // Continue the drawing loop
 }
 
-// Function to draw hexagon grid
+// Draw hexagon grid based on the given number of rows and hex size
 function drawHexagonGrid(r, numRows) {
-    // Calculate the number of columns based on the canvas width and hex size
     const numColumns = Math.ceil(canvas.width / (1.5 * r));
     const hexHeight = r * Math.sqrt(3);
 
-    // Use fixed line width to maintain consistent appearance
     ctx.lineWidth = 1 / cameraZoom;
 
     for (let i = 0; i < numColumns; i++) {
         for (let j = 0; j < numRows; j++) {
             const x = i * 1.5 * r;
             const y = j * hexHeight + (i % 2) * (hexHeight / 2);
-            const isVisible = isHexVisible(i, j);
+            const isVisible = isHexVisible(i, j); // Check visibility
             drawHexagon(x, y, r, i, j, isVisible);
         }
     }
 }
 
-// Function to draw a single hexagon
+// Draw individual hexagons
 function drawHexagon(a, b, r, x, y, isVisible = true) {
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
@@ -252,109 +225,86 @@ function drawHexagon(a, b, r, x, y, isVisible = true) {
     ctx.closePath();
     ctx.stroke();
 
+    // Label the hex with its coordinates
     ctx.font = `${r * 0.2}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText(`${x},${y}`, a,  b - r * 0.8);
+    ctx.fillText(`${x},${y}`, a, b - r * 0.8);
 
+    // Apply a semi-transparent fill if not visible
     if (!isVisible) {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // Semi-transparent black
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
         ctx.fill();
     }
 }
+
+// Check if a hex is visible (within range of any infantry units)
 function isHexVisible(hexX, hexY) {
-    hex ={"x":hexX,"y":hexY}
-    for (let unit of units) {
-        if (unit.Keywords.includes("Infantry")) {
-            if(isWithinRange(unit,hex)){
-                return true;
-            }
-        }
-    }
-    return false;
+    const hex = { x: hexX, y: hexY };
+    return units.some(unit => unit.Keywords.includes("Infantry") && isWithinRange(unit, hex));
 }
 
+// Calculate the hex distance between two points (cube coordinate system)
 function getHexDistance(x1, y1, x2, y2) {
     const dx = x2 - x1;
     const dy = y2 - y1;
-    return Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dx + dy)); // Hexagonal distance calculation
+    return Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dx + dy));
 }
 
-// Function to draw units on the grid
+// Draw all units (player and enemy) on the grid
 function drawUnits(r) {
     hoveredUnit = null; // Reset hovered unit each frame
 
-    // Create a map to store units in each hex
     const hexUnitMap = {};
-
-    // Store only units with "Infantry" keyword for vision
     const visionUnits = units.filter(unit => unit.Keywords && unit.Keywords.includes("Infantry"));
 
-    // Populate the hexUnitMap for player units
-    units.forEach((unit) => {
-        const key = `${unit.x},${unit.y}`; // Use hex coordinates as the key
-        if (!hexUnitMap[key]) {
-            hexUnitMap[key] = [];
-        }
+    // Store player units in hexUnitMap
+    units.forEach(unit => {
+        const key = `${unit.x},${unit.y}`;
+        if (!hexUnitMap[key]) hexUnitMap[key] = [];
         hexUnitMap[key].push(unit);
     });
 
-    liveEnemies.forEach((enemy) => {
-        const enemyPos = { x: enemy.x, y: enemy.y };
-        let isVisible = false;
-
-        // Check if any "Infantry" units are within 2 hexes of this enemy
-        visionUnits.forEach(unit => {
-            const unitPos = { x: unit.x, y: unit.y };
-            if (isWithinRange(unitPos, enemyPos)) {
-                isVisible = true;
-            }
-        });
+    // Store visible enemies in hexUnitMap
+    liveEnemies.forEach(enemy => {
+        const isVisible = visionUnits.some(unit => isWithinRange(unit, enemy));
         if (isVisible) {
-            const key = `${enemy.x},${enemy.y}`; // Use hex coordinates as the key
-            if (!hexUnitMap[key]) {
-                hexUnitMap[key] = [];
-            }
+            const key = `${enemy.x},${enemy.y}`;
+            if (!hexUnitMap[key]) hexUnitMap[key] = [];
             hexUnitMap[key].push(enemy);
         }
     });
 
-    // Now, draw player units
-    Object.keys(hexUnitMap).forEach((hexKey) => {
+    // Draw each unit in its respective hex
+    Object.keys(hexUnitMap).forEach(hexKey => {
         const [hexX, hexY] = hexKey.split(',').map(Number);
         const unitList = hexUnitMap[hexKey];
-
-        // Calculate the center position of the hex
         const hexCenterX = hexX * 1.5 * r;
         const hexCenterY = hexY * r * Math.sqrt(3) + (hexX % 2) * (r * Math.sqrt(3) / 2);
 
-        // Distribute player units in the hex
         unitList.forEach((unit, index) => {
             drawUnitAt(unit, index, unitList, r, hexCenterX, hexCenterY);
         });
     });
 
-    // Draw information for the hovered unit
-    if (hoveredUnit) {
-        drawUnitInfo(hoveredUnit, r);
-    }
+    // Draw hover information if a unit is being hovered over
+    if (hoveredUnit) drawUnitInfo(hoveredUnit, r);
 }
 
-// Function to draw a unit at a given hex center with optional distribution
+// Draw individual unit at a given hex center
 function drawUnitAt(unit, index, unitList, r, hexCenterX, hexCenterY) {
-    // Distribute units in a circular pattern around the hex center
-    const angle = (index / unitList.length) * 2 * Math.PI; // Evenly distribute units in a circle
-    const offsetX = Math.cos(angle) * r * 0.3; // Adjust offset magnitude
-    const offsetY = Math.sin(angle) * r * 0.3; // Adjust offset magnitude
+    // Position units in a circular pattern within the hex
+    const angle = (index / unitList.length) * 2 * Math.PI;
+    const offsetX = Math.cos(angle) * r * 0.3;
+    const offsetY = Math.sin(angle) * r * 0.3;
 
-    // Calculate the final position for this unit
     const unitX = hexCenterX + offsetX;
     const unitY = hexCenterY + offsetY;
 
-    // Draw the unit image if available
+    // Draw the unit's image or placeholder if not available
     const unitImage = loadedImages[unit.type];
     if (unitImage) {
-        const imgSize = r; // Size of the image
+        const imgSize = r;
         ctx.drawImage(unitImage, unitX - imgSize / 2, unitY - imgSize / 2, imgSize, imgSize);
     } else {
         // Draw a placeholder circle if the image is not available
@@ -364,85 +314,73 @@ function drawUnitAt(unit, index, unitList, r, hexCenterX, hexCenterY) {
         ctx.fill();
     }
 
-    if (toggleStatsCheckbox.checked) {
-        drawStats(unit, unitX, unitY, r);
-    }
-    if (toggleNamesCheckbox.checked) {
-        drawNames(unit, unitX, unitY, r, index, unitList.length);
-    }
+    // Draw stats and names if toggled
+    if (toggleStatsCheckbox.checked) drawStats(unit, unitX, unitY, r);
+    if (toggleNamesCheckbox.checked) drawNames(unit, unitX, unitY, r, index, unitList.length);
 
-    // Check if the mouse is hovering over this unit
+    // Check if the mouse is hovering over this unit using a distance-based approach
     const dx = mouseX - unitX;
     const dy = mouseY - unitY;
-    if (Math.sqrt(dx * dx + dy * dy) < r) {
-        hoveredUnit = unit; // Store the hovered unit
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance < r / 2) {  // Adjust r/2 based on the size of your unit for accurate hovering
+        hoveredUnit = unit;
     }
 }
 
 
-// Function to draw unit information on hover
+// Draw unit stats on hover
 function drawUnitInfo(unit, r) {
     const x = unit.x * 1.5 * r;
     const y = unit.y * r * Math.sqrt(3) + (unit.x % 2) * (r * Math.sqrt(3) / 2);
 
-    // Set text properties
     ctx.font = `${r * 0.3}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.fillStyle = "red";
 
-    // Prepare the unit information text
     const unitInfoText = `${unit.name}\nFS: ${unit.FS} Armor: ${unit.Armor}`;
-
-    // Calculate the background size based on text metrics
     const textWidth = ctx.measureText(unitInfoText).width;
-    const textHeight = r * 0.6; // Adjust as needed for spacing
+    const textHeight = r * 0.6;
 
-    // Set the background properties
-    ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; // Semi-transparent black
+    // Draw background box for the unit information
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
     ctx.fillRect(x - textWidth / 2 - 5, y - r * 1.2 - 5, textWidth + 10, textHeight + 20);
 
-    // Draw unit name
-    ctx.fillStyle = "white"; // Set text color to white
+    // Draw the unit's name, FS, and Armor stats
+    ctx.fillStyle = "white";
     ctx.fillText(unit.name, x, y - r * 1.2);
-
-    // Draw FS and Armor
     ctx.fillText(`FS: ${unit.FS} Armor: ${unit.Armor}`, x, y - r * 0.8);
-
 }
 
-// Function to draw unit FS and Armor stats with smaller, closer circles
+// Draw unit FS and Armor stats
 function drawStats(unit, unitX, unitY, r) {
     const fsText = `${unit.FS}`;
     const armorText = `${unit.Armor}`;
+    const circleRadius = r * 0.15;
+    const circleSpacing = circleRadius;
 
-    // Adjust circle size and spacing
-    const circleRadius = r * 0.15; // Smaller circle size
-    const circleSpacing = circleRadius; // Reduce spacing between circles
-
-    // Draw green circle for FS (Field Strength)
+    // Draw green FS circle
     ctx.beginPath();
-    ctx.arc(unitX - circleSpacing, unitY - r * 0.5, circleRadius, 0, 2 * Math.PI); // FS circle
+    ctx.arc(unitX - circleSpacing, unitY - r * 0.5, circleRadius, 0, 2 * Math.PI);
     ctx.fillStyle = "green";
     ctx.fill();
 
-    // Draw gray circle for Armor
+    // Draw gray Armor circle
     ctx.beginPath();
-    ctx.arc(unitX + circleSpacing, unitY - r * 0.5, circleRadius, 0, 2 * Math.PI); // Armor circle
+    ctx.arc(unitX + circleSpacing, unitY - r * 0.5, circleRadius, 0, 2 * Math.PI);
     ctx.fillStyle = "gray";
     ctx.fill();
 
-    // Draw FS text in the center of the green circle
+    // Draw FS and Armor text inside the circles
     ctx.font = `${circleRadius * 1.2}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "white"; // White text color for contrast
+    ctx.fillStyle = "white";
     ctx.fillText(fsText, unitX - circleSpacing, unitY - r * 0.5);
-
-    // Draw Armor text in the center of the gray circle
     ctx.fillText(armorText, unitX + circleSpacing, unitY - r * 0.5);
 }
 
+// Draw unit names
 function drawNames(unit, x, y, r, index, totalUnits) {
     ctx.font = `${r * 0.3}px Arial`;
     ctx.textAlign = "center";
@@ -450,20 +388,19 @@ function drawNames(unit, x, y, r, index, totalUnits) {
     const offsetY = (index / totalUnits) * 20 - 5;
 
     const unitInfoText = `${unit.name}`;
-    // Calculate the background size based on text metrics
     const textWidth = ctx.measureText(unitInfoText).width;
-    const textHeight = r * 0.6; // Adjust as needed for spacing
+    const textHeight = r * 0.6;
 
-    // Set the background properties
-    ctx.fillStyle = "rgba(51, 255, 51, 1)"; // Semi-transparent black
+    // Draw background for the name
+    ctx.fillStyle = "rgba(51, 255, 51, 1)";
     ctx.fillRect(x - textWidth / 2, y - r * 0.1 - 5 + offsetY, textWidth, textHeight - 10);
 
+    // Draw the unit's name
     ctx.fillStyle = "black";
     ctx.fillText(unit.name, x, y - r * 0.1 + offsetY);
-
 }
 
-// Gets the relevant location from a mouse or single touch event
+// Utility function to get event location from mouse or touch
 function getEventLocation(e) {
     if (e.touches && e.touches.length == 1) {
         return { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -472,21 +409,23 @@ function getEventLocation(e) {
     }
 }
 
+// Dragging and zoom variables
 let isDragging = false;
 let dragStart = { x: 0, y: 0 };
 
+// Handle pointer down (start dragging)
 function onPointerDown(e) {
     isDragging = true;
     dragStart.x = getEventLocation(e).x / cameraZoom - cameraOffset.x;
     dragStart.y = getEventLocation(e).y / cameraZoom - cameraOffset.y;
 }
 
-function onPointerUp(e) {
+// Handle pointer up (stop dragging)
+function onPointerUp() {
     isDragging = false;
-    initialPinchDistance = null;
-    lastZoom = cameraZoom;
 }
 
+// Handle pointer move (dragging)
 function onPointerMove(e) {
     if (isDragging) {
         cameraOffset.x = getEventLocation(e).x / cameraZoom - dragStart.x;
@@ -494,16 +433,17 @@ function onPointerMove(e) {
     }
 }
 
+// Handle touch events for drag or pinch zoom
 function handleTouch(e, singleTouchHandler) {
     if (e.touches.length == 1) {
-        singleTouchHandler(e);
-    } else if (e.type == "touchmove" && e.touches.length == 2) {
+        singleTouchHandler(e); // Handle single touch drag
+    } else if (e.type === "touchmove" && e.touches.length === 2) {
         isDragging = false;
-        handlePinch(e);
+        handlePinch(e); // Handle pinch zoom
     }
 }
 
-let initialPinchDistance = null;
+// Handle pinch zoom
 let lastZoom = cameraZoom;
 
 function handlePinch(e) {
@@ -512,35 +452,32 @@ function handlePinch(e) {
     let touch1 = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     let touch2 = { x: e.touches[1].clientX, y: e.touches[1].clientY };
 
-    // This is distance squared, but no need for an expensive sqrt as it's only used in ratio
     let currentDistance = (touch1.x - touch2.x) ** 2 + (touch1.y - touch2.y) ** 2;
 
-    if (initialPinchDistance == null) {
-        initialPinchDistance = currentDistance;
+    if (!this.initialPinchDistance) {
+        this.initialPinchDistance = currentDistance;
     } else {
-        adjustZoom(null, currentDistance / initialPinchDistance);
+        adjustZoom(null, currentDistance / this.initialPinchDistance);
     }
 }
 
+// Adjust zoom based on scroll or pinch
 function adjustZoom(zoomAmount, zoomFactor, zoomCenter) {
     if (!isDragging) {
         const oldZoom = cameraZoom;
 
-        // Adjust the zoom level
+        // Adjust the zoom level based on zoomAmount or zoomFactor
         if (zoomAmount) {
             cameraZoom += zoomAmount;
         } else if (zoomFactor) {
             cameraZoom = zoomFactor * lastZoom;
         }
 
-        // Clamp the zoom level to the min/max limits
+        // Clamp the zoom level between min and max values
         cameraZoom = Math.min(cameraZoom, MAX_ZOOM);
         cameraZoom = Math.max(cameraZoom, MIN_ZOOM);
 
-        // Calculate the scale factor between the old and new zoom
-        const zoomScale = cameraZoom / oldZoom;
-
-        // Apply the zoom centered around the zoomCenter (mouse position)
+        // Recalculate offset for zoom centering
         if (zoomCenter) {
             const worldPos = {
                 x: (zoomCenter.x - cameraOffset.x) / oldZoom,
@@ -553,19 +490,18 @@ function adjustZoom(zoomAmount, zoomFactor, zoomCenter) {
     }
 }
 
-
-// Handle mouse and touch events for panning and zooming
+// Mouse and touch event listeners
 canvas.addEventListener("mousedown", onPointerDown);
 canvas.addEventListener("touchstart", (e) => handleTouch(e, onPointerDown));
 canvas.addEventListener("mouseup", onPointerUp);
 canvas.addEventListener("touchend", (e) => handleTouch(e, onPointerUp));
-canvas.addEventListener("mousemove", onPointerMove);
 canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
-
-    // Adjust mouse coordinates for zoom and pan
     mouseX = (e.clientX - rect.left) / cameraZoom - cameraOffset.x / cameraZoom;
     mouseY = (e.clientY - rect.top) / cameraZoom - cameraOffset.y / cameraZoom;
+    if (isDragging) {
+        onPointerMove(e);
+    }
 });
 canvas.addEventListener("touchmove", (e) => handleTouch(e, onPointerMove));
 canvas.addEventListener("wheel", (e) => {
@@ -573,6 +509,7 @@ canvas.addEventListener("wheel", (e) => {
     adjustZoom(e.deltaY * SCROLL_SENSITIVITY, null, zoomCenter);
 });
 
+// Send the canvas image data to the WebSocket server
 function sendCanvasImage() {
     const canvas = document.getElementById('canvas');
     if (!canvas) {
@@ -580,16 +517,13 @@ function sendCanvasImage() {
         return;
     }
 
-    // Convert the canvas content to a data URL (base64 string)
     const imageData = canvas.toDataURL('image/png');
-
-    // Send the base64 string over the WebSocket to the server
     socket.send(JSON.stringify({ type: 'canvasImage', data: imageData }));
 
     console.log('Canvas image data sent over WebSocket.');
 }
 
-// Convert offset (even-q) coordinates to cube coordinates
+// Utility to convert offset coordinates to cube coordinates (for hex distance calculation)
 function offsetToCube(col, row) {
     let x = col;
     let z = row - (col - (col & 1)) / 2;
@@ -597,28 +531,22 @@ function offsetToCube(col, row) {
     return { x, y, z };
 }
 
-// Calculate distance between two hexes in cube coordinates
+// Calculate the distance between two hexes using cube coordinates
 function hexDistance(a, b) {
     return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z));
 }
 
-// Check if the enemy is within 2 hexes of any player unit
+// Check if an enemy is within range of any player unit
 function isWithinRange(playerUnits, enemy, range = visionRange) {
     const enemyCube = offsetToCube(enemy.x, enemy.y);
+    const unitsToCheck = Array.isArray(playerUnits) ? playerUnits : [playerUnits];
 
-    if( typeof playerUnits == "object"){
-        const unitCube = offsetToCube(playerUnits.x, playerUnits.y);
+    for (const unit of unitsToCheck) {
+        const unitCube = offsetToCube(unit.x, unit.y);
         if (hexDistance(enemyCube, unitCube) <= range) {
-            return true;  // Enemy is within range
-        }
-    } else {
-        for (const unit of playerUnits) {
-            const unitCube = offsetToCube(unit.x, unit.y);
-            if (hexDistance(enemyCube, unitCube) <= range) {
-                return true;  // Enemy is within range
-            }
+            return true;
         }
     }
 
-    return false;  // Enemy is not in range of any player unit
+    return false;
 }
