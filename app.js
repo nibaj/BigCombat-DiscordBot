@@ -414,7 +414,7 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
           const speed = unit.stats.Speed;
 
           // Check if the unit can move to the target coordinates within its speed
-          if (isWithinReach(currentQ, currentR, targetQ, targetR, speed)) {
+          if (isWithinReach(unit, {currentQ, currentR}, {targetQ,targetR})) {
             // Update unit position
             updateUnitPosition(playerId, unitName, targetQ, targetR);
 
@@ -530,6 +530,7 @@ function evenqOffsetNeighbor(hex, direction) {
 
 // Function to check if a user’s unit can execute a command and update its timestamp
 function canExecuteCommand(userId, unitName, commandName) {
+    return { canExecute: true };
     const now = new Date();
     const dayOfWeek = now.getUTCDay(); // 0 (Sunday) to 6 (Saturday)
 

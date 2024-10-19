@@ -1,0 +1,30 @@
+{
+  "hex_terrain": {
+    "forest": {
+      "ignored_by": ["Infantry"],
+      "blocked_by": ["Heavy"]
+    },
+    "mountain": {
+      "ignored_by": ["Climbing"],
+      "blocked_by": ["Vehicle"]
+    },
+    "object": {
+      "ignored_by": ["Infantry"],
+      "blocked_by": []
+    },
+    "water": {
+      "ignored_by": ["Aquatic"],
+      "blocked_by": ["Heavy", "Vehicle"]
+    }
+  },
+  "edges": {
+    "river": {
+      "ignored_by": ["Amphibious"],
+      "blocked_by": ["Heavy"]
+    },
+    "elevation": {
+      "ignored_by": ["Climbing"],
+      "blocked_by": []
+    }
+  }
+}

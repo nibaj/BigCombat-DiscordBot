@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 
 // Load player data from JSON (or any database in the future)
 export function loadPlayerData() {
@@ -296,7 +297,7 @@ export function updateUnitPosition(playerId, unitName, newQ, newR) {
 }
 
 // https://www.redblobgames.com/grids/hexagons-v1/
-export function isWithinReach(currentQ, currentR, targetQ, targetR, speed) {
+export function isWithinReach2(currentQ, currentR, targetQ, targetR, speed) {
   // Define current and target hexes
   const currentHex = { col: currentQ, row: currentR };
   const targetHex = { col: targetQ, row: targetR };
@@ -454,4 +455,141 @@ export function updateEnemyStats(enemyID, updatedStats) {
     saveEnemiesData(liveEnemies);
 
     return { success: true };
+}
+
+// Load map data from the file
+function loadMapData() {
+    try {
+    return JSON.parse(fs.readFileSync('public/data/map.json', 'utf-8'));
+  } catch (err) {
+    console.error('Error loading map data:', err);
+    return {};
+  }
+}
+
+// Load terrain rules data
+function loadTerrainRules() {
+    try {
+    return JSON.parse(fs.readFileSync('public/data/terrain_rules.json', 'utf-8'));
+  } catch (err) {
+    console.error('Error loading terrain_rules data:', err);
+    return {};
+  }
+}
+
+// Helper function: Get the terrain cost based on the unit and hex
+function getHexTerrainCost(hex, unit, terrainRules) {
+    const terrain = hex.terrain;
+    const unitKeywords = unit.stats.Keywords;
+
+    const terrainInfo = terrainRules.hex_terrain[terrain];
+
+    if (!terrainInfo) {
+        return 1; // Default movement cost if no terrain data is found
+    }
+
+    // Check if the terrain is ignored or blocked by the unit's keywords
+    if (unitKeywords.some(keyword => terrainInfo.blocked_by.includes(keyword))) {
+        return Infinity; // The unit is blocked by the terrain
+    }
+
+    if (unitKeywords.some(keyword => terrainInfo.ignored_by.includes(keyword))) {
+        return 1; // The unit ignores the terrain cost
+    }
+
+    return 2; // Default extra movement cost for entering certain terrains
+}
+
+// Helper function: Get edge cost based on the unit and edge features
+function getEdgeTerrainCost(edge, unit, terrainRules) {
+    const feature = edge.feature;
+    const unitKeywords = unit.stats.Keywords;
+
+    const edgeInfo = terrainRules.edges[feature];
+
+    if (!edgeInfo) {
+        return 1; // Default movement cost if no edge data is found
+    }
+
+    // Check if the edge feature is ignored or blocked by the unit's keywords
+    if (unitKeywords.some(keyword => edgeInfo.blocked_by.includes(keyword))) {
+        return Infinity; // The unit is blocked by the edge
+    }
+
+    if (unitKeywords.some(keyword => edgeInfo.ignored_by.includes(keyword))) {
+        return 1; // The unit ignores the edge cost
+    }
+
+    return 2; // Default extra movement cost for crossing certain edges
+}
+
+// Helper function to get neighboring hexes
+function getNeighbors(hex, mapData) {
+    const directions = [
+        { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 }, // NE, E, SE
+        { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 }  // SW, W, NW
+    ];
+
+    return directions.map(dir => {
+        const neighbor = mapData.hexes.find(h => h.q === hex.q + dir.q && h.r === hex.r + dir.r);
+        return neighbor || null; // Return null if no neighbor found
+    }).filter(Boolean); // Remove null neighbors
+}
+
+// Main pathfinding function for the hex grid
+function calculatePath(startHex, targetHex, unit, mapData, terrainRules) {
+    const visited = new Set();
+    const queue = [{ hex: startHex, distance: 0 }];
+    const maxSpeed = unit.stats.Speed;
+
+    while (queue.length > 0) {
+        const { hex, distance } = queue.shift();
+
+        // If the target hex is reached within the speed limit, return true
+        if (hex.q === targetHex.q && hex.r === targetHex.r) {
+            return distance <= maxSpeed;
+        }
+
+        // Get neighboring hexes
+        const neighbors = getNeighbors(hex, mapData);
+        console.log(neighbors)
+        neighbors.forEach(neighbor => {
+            // Check for edge terrain costs
+            const edge = mapData.edges.find(edge => edge.q === hex.q && edge.r === hex.r && edge.direction === getDirection(hex, neighbor));
+            const terrainCost = getHexTerrainCost(neighbor, unit, terrainRules);
+            const edgeCost = edge ? getEdgeTerrainCost(edge, unit, terrainRules) : 1;
+            const totalCost = terrainCost + edgeCost;
+
+            console.log(terrainCost, edgeCost)
+            // Add to the queue if the distance is within the unit's speed
+            const key = `${neighbor.q},${neighbor.r}`;
+            if (!visited.has(key) && distance + totalCost <= maxSpeed) {
+                visited.add(key);
+                queue.push({ hex: neighbor, distance: distance + totalCost });
+            }
+        });
+    }
+
+    return false; // If no path found within speed, return false
+}
+
+// Helper function to determine direction between two hexes
+function getDirection(fromHex, toHex) {
+    const qDiff = toHex.q - fromHex.q;
+    const rDiff = toHex.r - fromHex.r;
+
+    if (qDiff === 1 && rDiff === 0) return 'NE';
+    if (qDiff === 1 && rDiff === -1) return 'SE';
+    if (qDiff === 0 && rDiff === -1) return 'S';
+    if (qDiff === -1 && rDiff === 0) return 'SW';
+    if (qDiff === -1 && rDiff === 1) return 'NW';
+    if (qDiff === 0 && rDiff === 1) return 'N';
+    return null;
+}
+
+// Function to check if the unit can move to the target hex
+export function isWithinReach(unit, startHex, targetHex) {
+    const mapData = loadMapData();
+    const terrainRules = loadTerrainRules();
+    return calculatePath(startHex, targetHex, unit, mapData, terrainRules);
 }

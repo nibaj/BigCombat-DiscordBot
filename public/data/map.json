@@ -1,0 +1,11 @@
+{
+  "hexes": [
+    { "q": 0, "r": 0, "terrain": "plain" },
+    { "q": 1, "r": 0, "terrain": "forest" },
+    { "q": 1, "r": -1, "terrain": "water" }
+  ],
+  "edges": [
+    { "q": 0, "r": 0, "direction": "NE", "feature": "river" },
+    { "q": 6, "r": 3, "direction": "S", "feature": "elevation" }
+  ]
+}
