@@ -1,7 +1,7 @@
 {
   "hexes": [
     { "q": 0, "r": 0, "terrain": "plain" },
-    { "q": 1, "r": 0, "terrain": "forest" },
+    { "q": 5, "r": 3, "terrain": "forest" },
     { "q": 1, "r": -1, "terrain": "water" }
   ],
   "edges": [

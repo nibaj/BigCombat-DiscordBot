@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const link = 'https://dc3e-2001-7e8-f606-fc01-5cc2-b0b1-89c9-9012.ngrok-free.app'
+const link = process.env.FORWARDING;
 
 // Create an express app
 const app = express();
@@ -413,8 +413,18 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
           const currentR = unit.position.y;
           const speed = unit.stats.Speed;
 
+          if(currentQ == targetQ && currentR == targetR){
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `Unit "${unitName}" is already at (${targetQ}, ${targetR}).`,
+                flags: 64
+              },
+            });
+          }
+
           // Check if the unit can move to the target coordinates within its speed
-          if (isWithinReach(unit, {currentQ, currentR}, {targetQ,targetR})) {
+          if (isWithinReach(unit, {q:currentQ, r:currentR}, {q:targetQ,r:targetR})) {
             // Update unit position
             updateUnitPosition(playerId, unitName, targetQ, targetR);
 

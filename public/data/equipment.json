@@ -13,7 +13,11 @@
             "Irregular Unit",
             "Sappers"
         ],
-        "Required_Equipment": null
+        "Required_Equipment": null,
+        "Keywords": null,
+        "stats": {
+            "Armor": 1
+        }
     },
     "Orbital Drop Training": {
         "Upgrade_Description": "Train a unit that isn't an Orbital Drop unit to Drop. -1 FS",
@@ -29,7 +33,11 @@
             "Sappers",
             "Power Armored Infantry"
         ],
-        "Required_Equipment": null
+        "Required_Equipment": null,
+        "Keywords": "OrbitalDrop",
+        "stats": {
+            "FS": -1
+        }
     },
     "Company Commander": {
         "Upgrade_Description": "Can Recruit from Cities and Population Centers when entering a Population Center. \nUse Recruiter Action to gain +1FS Max for standard Infantry. +2 FS MAX",
@@ -40,7 +48,8 @@
         "Allowed_Units": [
             "Infantry Unit"
         ],
-        "Required_Equipment": null
+        "Required_Equipment": null,
+        "Keywords": "Recruiter"
     },
     "Melee Weapons - Standard": {
         "Upgrade_Description": "Add 1 Damage when Charging\nAllows for \"Stand Your Ground\" and \"Charge\"",
@@ -54,7 +63,8 @@
             "Special Forces",
             "Mechanized Infantry"
         ],
-        "Required_Equipment": null
+        "Required_Equipment": null,
+        "Keywords": "Meele"
     },
     "Drone Operator": {
         "Upgrade_Description": "Your unit has a few trained drone handlers. These drones are small and fit inside a standard issue backpack. While they arn't \nas stealthy as the dedicated K-9 scouts these drones can fly quickly over a larger area. Unlike Aircraft drones are fragile and \ncan be endaged by ground forces. They act as an extention of your LOS. They can see at the same LOS range as a standard \nunit in the current campaign. Can be attacked. Are not stealthed. Could be used as a distraction. \nAction \"Deploy Drone Scout to (HEX)\" Drones's can only go 5 Hex's out. (5 round cooldown)",
@@ -101,7 +111,10 @@
             "Power Armored Infantry",
             "Mechanized Infantry"
         ],
-        "Required_Equipment": null
+        "Required_Equipment": null,
+        "stats": {
+            "Speed": -1
+        }
     },
     "Lgt Anti-armor Weapon": {
         "Upgrade_Description": "Adds +1 AP Per Used Weapon - Upgrade gives 3/3 uses. \nUse them all at once or 1 at a time. Range 1",
@@ -226,7 +239,7 @@
         "Required_Equipment": null
     },
     "Delayed Explosive Charge": {
-        "Upgrade_Description": "Set explosves to detonate in a number of rounds. Try to time it right! \nUses FS for Damage. Special Forces comes with this equipment",
+        "Upgrade_Description": "Set explosives to detonate in a number of rounds. Try to time it right! \nUses FS for Damage. Special Forces comes with this equipment",
         "Cost": 1,
         "Slot": [
             "Secondary_Equipment"
@@ -249,7 +262,7 @@
         "Required_Equipment": null
     },
     "Remote Detonators": {
-        "Upgrade_Description": "Can set explosves and then detonate remotely with an action. \nDoes double damage to enemy structures",
+        "Upgrade_Description": "Can set explosives and then detonate remotely with an action. \nDoes double damage to enemy structures",
         "Cost": 1,
         "Slot": [
             null
@@ -280,7 +293,10 @@
         "Allowed_Units": [
             "Special Forces"
         ],
-        "Required_Equipment": null
+        "Required_Equipment": null,
+        "stats": {
+            "Range": 1
+        }
     },
     "Silent Jump Pack Training": {
         "Upgrade_Description": "Aerial Recon Training - By making use of jump-packs you can swiftly move accros difficult terrain.\nJump Up / Down Elevtion lines without being slowed, Jump out of Aircraft Silently. Ignore Rivers\nLeads to Jet-Pack Releated Upgrades.",
@@ -291,7 +307,8 @@
         "Allowed_Units": [
             "Special Forces"
         ],
-        "Required_Equipment": null
+        "Required_Equipment": null,
+        "Keywords": "JetPack"
     },
     "Recon Motorcycles": {
         "Upgrade_Description": "Recon Expeditionary Unit investment. Your Merc Company now has the maintance, supply and trainning to run dedicated \nrecon motorcycles in the field. \nLower FS -1, Increase Speed +1.",
@@ -302,7 +319,11 @@
         "Allowed_Units": [
             "Special Forces"
         ],
-        "Required_Equipment": null
+        "Required_Equipment": null,
+        "stats": {
+            "FS": -1,
+            "Speed": 1
+        }
     },
     "Road Building Equipment": {
         "Upgrade_Description": "The equipment needed to build roads and bridges. \nRoads - Define a minimum of 3 hex range; takes 1 action per hex. \nOn completion, a road will connect the defined hex grids. \n\nCan Also build rough airfields for fix-winged aircraft landing. \nThese don't automatically reload or repair aircraft. But can pull from a local Supply depot",
@@ -548,7 +569,10 @@
         "Allowed_Units": [
             "Sappers"
         ],
-        "Required_Equipment": null
+        "Required_Equipment": null,
+        "stats": {
+            "Speed": 1
+        }
     },
     "Add Squad": {
         "Upgrade_Description": "Increases Force Strength +1 (can be taken once)",
@@ -559,7 +583,10 @@
         "Allowed_Units": [
             "Power Armored Infantry"
         ],
-        "Required_Equipment": null
+        "Required_Equipment": null,
+        "stats": {
+            "FS": 1
+        }
     },
     "Hop Jet": {
         "Upgrade_Description": "Can jump over a hex as an action. 2 round cool down.",

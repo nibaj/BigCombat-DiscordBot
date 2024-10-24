@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
+
 // Load player data from JSON (or any database in the future)
 export function loadPlayerData() {
   try {
@@ -259,12 +260,16 @@ export function upgradeUnitWithEquipment(playerId, unitName, equipmentName) {
   }
 
   // Check if the unit has enough upgrade points to equip this item
-  if (unit.stats.Upgrade_Points < equipment.Cost) {
-    return `Unit "${unitName}" does not have enough upgrade points to equip "${equipmentName}".`;
+  if (unit.stats.Upgrade_Points < equipment.Cost && players[playerId].pay < (equipment.Cost * 10)) {
+    return `Unit "${unitName}" does not have enough upgrade points or Pay to equip "${equipmentName}".`;
   }
 
   // Deduct the upgrade points
-  unit.stats.Upgrade_Points -= equipment.Cost;
+  if (unit.stats.Upgrade_Points >= equipment.Cost) {
+    unit.stats.Upgrade_Points -= equipment.Cost;
+  }else{
+    players[playerId].pay -= equipment.Cost * 10;
+  }
 
   // Add the equipment to the unit's Equipped_Equipment array
   unit.stats.Equipped_Equipment = unit.stats.Equipped_Equipment || [];
@@ -477,119 +482,136 @@ function loadTerrainRules() {
   }
 }
 
-// Helper function: Get the terrain cost based on the unit and hex
-function getHexTerrainCost(hex, unit, terrainRules) {
-    const terrain = hex.terrain;
-    const unitKeywords = unit.stats.Keywords;
+// Load the map data with hex edges (rivers, elevation, etc.)
+var mapData = loadMapData();  // Assume this reads the map.json file
 
-    const terrainInfo = terrainRules.hex_terrain[terrain];
-
-    if (!terrainInfo) {
-        return 1; // Default movement cost if no terrain data is found
-    }
-
-    // Check if the terrain is ignored or blocked by the unit's keywords
-    if (unitKeywords.some(keyword => terrainInfo.blocked_by.includes(keyword))) {
-        return Infinity; // The unit is blocked by the terrain
-    }
-
-    if (unitKeywords.some(keyword => terrainInfo.ignored_by.includes(keyword))) {
-        return 1; // The unit ignores the terrain cost
-    }
-
-    return 2; // Default extra movement cost for entering certain terrains
-}
-
-// Helper function: Get edge cost based on the unit and edge features
-function getEdgeTerrainCost(edge, unit, terrainRules) {
-    const feature = edge.feature;
-    const unitKeywords = unit.stats.Keywords;
-
-    const edgeInfo = terrainRules.edges[feature];
-
-    if (!edgeInfo) {
-        return 1; // Default movement cost if no edge data is found
-    }
-
-    // Check if the edge feature is ignored or blocked by the unit's keywords
-    if (unitKeywords.some(keyword => edgeInfo.blocked_by.includes(keyword))) {
-        return Infinity; // The unit is blocked by the edge
-    }
-
-    if (unitKeywords.some(keyword => edgeInfo.ignored_by.includes(keyword))) {
-        return 1; // The unit ignores the edge cost
-    }
-
-    return 2; // Default extra movement cost for crossing certain edges
-}
-
-// Helper function to get neighboring hexes
-function getNeighbors(hex, mapData) {
-    const directions = [
-        { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 }, // NE, E, SE
-        { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 }  // SW, W, NW
-    ];
-
-    return directions.map(dir => {
-        const neighbor = mapData.hexes.find(h => h.q === hex.q + dir.q && h.r === hex.r + dir.r);
-        return neighbor || null; // Return null if no neighbor found
-    }).filter(Boolean); // Remove null neighbors
-}
-
-// Main pathfinding function for the hex grid
-function calculatePath(startHex, targetHex, unit, mapData, terrainRules) {
-    const visited = new Set();
-    const queue = [{ hex: startHex, distance: 0 }];
+// Function to calculate the movement path, taking into account hex edges (rivers, elevation) and keywords.
+function calculatePath(unit, startHex, targetHex) {
+    console.log("Start",startHex," Target",targetHex)
+    const openList = [{ hex: startHex, cost: 0 }];
+    const closedList = new Set();
     const maxSpeed = unit.stats.Speed;
 
-    while (queue.length > 0) {
-        const { hex, distance } = queue.shift();
+    while (openList.length > 0) {
+        const { hex, cost } = openList.shift();
 
-        // If the target hex is reached within the speed limit, return true
         if (hex.q === targetHex.q && hex.r === targetHex.r) {
-            return distance <= maxSpeed;
+            return cost <= maxSpeed;  // Check if the cost is within the unit's max speed
         }
 
-        // Get neighboring hexes
-        const neighbors = getNeighbors(hex, mapData);
-        console.log(neighbors)
-        neighbors.forEach(neighbor => {
-            // Check for edge terrain costs
-            const edge = mapData.edges.find(edge => edge.q === hex.q && edge.r === hex.r && edge.direction === getDirection(hex, neighbor));
-            const terrainCost = getHexTerrainCost(neighbor, unit, terrainRules);
-            const edgeCost = edge ? getEdgeTerrainCost(edge, unit, terrainRules) : 1;
-            const totalCost = terrainCost + edgeCost;
+        // Add current hex to the closed list
+        closedList.add(`${hex.q},${hex.r}`);
 
-            console.log(terrainCost, edgeCost)
-            // Add to the queue if the distance is within the unit's speed
-            const key = `${neighbor.q},${neighbor.r}`;
-            if (!visited.has(key) && distance + totalCost <= maxSpeed) {
-                visited.add(key);
-                queue.push({ hex: neighbor, distance: distance + totalCost });
+        // Explore all neighbors (N, NE, SE, S, SW, NW)
+        for (let i = 0; i < 6; i++) {
+            const neighbor = getNeighbor(hex, i);
+            if (!closedList.has(`${neighbor.q},${neighbor.r}`)) {
+                const direction = getDirection(hex, neighbor);
+                const terrainCost = getEdgeMovementCost(hex, neighbor, unit);
+
+                if (terrainCost !== -1) {  // If movement is possible
+                    const newCost = cost + terrainCost;
+
+                    if (newCost <= maxSpeed) {
+                        openList.push({ hex: neighbor, cost: newCost });
+                    }
+                }
             }
-        });
+        }
     }
-
-    return false; // If no path found within speed, return false
+    return false;  // If no path is found
 }
 
-// Helper function to determine direction between two hexes
-function getDirection(fromHex, toHex) {
-    const qDiff = toHex.q - fromHex.q;
-    const rDiff = toHex.r - fromHex.r;
+// Function to get a neighbor hex based on direction (N, NE, SE, S, SW, NW)
+function getNeighbor(hex, direction) {
+    const directions = [
+        { dq: 0, dr: -1 },  // N
+        { dq: 1, dr: -1 },  // NE
+        { dq: 1, dr: 0 },   // SE
+        { dq: 0, dr: 1 },   // S
+        { dq: -1, dr: 0 },  // SW
+        { dq: -1, dr: -1 }   // NW
+    ];
+    const dir = directions[direction];
+    return { q: hex.q + dir.dq, r: hex.r + dir.dr };
+}
 
-    if (qDiff === 1 && rDiff === 0) return 'NE';
-    if (qDiff === 1 && rDiff === -1) return 'SE';
-    if (qDiff === 0 && rDiff === -1) return 'S';
-    if (qDiff === -1 && rDiff === 0) return 'SW';
-    if (qDiff === -1 && rDiff === 1) return 'NW';
-    if (qDiff === 0 && rDiff === 1) return 'N';
+// Function to get the direction between two neighboring hexes
+function getDirection(fromHex, toHex) {
+    const dq = toHex.q - fromHex.q;
+    const dr = toHex.r - fromHex.r;
+
+    if (dq === 0 && dr === -1) return 'N';
+    if (dq === 1 && dr === -1) return 'NE';
+    if (dq === 1 && dr === 0) return 'SE';
+    if (dq === 0 && dr === 1) return 'S';
+    if (dq === -1 && dr === 1) return 'SW';
+    if (dq === -1 && dr === 0) return 'NW';
+
     return null;
 }
 
+function getEdgeMovementCost(fromHex, toHex, unit) {
+    const hex = mapData.hexes.find(hex =>
+        `${hex.q},${hex.r}` === `${toHex.q},${toHex.r}`
+    );
+
+    if (hex) {
+        if (hex.terrain === 'water') {
+            return -1;
+        }
+
+        if (hex.terrain === 'forest') {
+            if (unit.stats.Keywords.includes('Infantry')) {
+                return 1;
+            }
+            return 2;
+        }
+    }
+
+    // Determine the direction from the current hex to the target hex
+    const direction = getDirection(fromHex, toHex);
+    const reverseDirection = getDirection(toHex, fromHex);
+
+    // Construct the edge keys for both directions
+    const edgeKey = `${fromHex.q},${fromHex.r}-${direction}`;
+    const reverseEdgeKey = `${toHex.q},${toHex.r}-${reverseDirection}`;
+
+    // Check if there's an edge in either direction on the map
+    const edge = mapData.edges.find(edge =>
+        `${edge.q},${edge.r}-${edge.direction}` === edgeKey ||
+        `${edge.q},${edge.r}-${edge.direction}` === reverseEdgeKey
+    );
+
+    // If we find an edge, determine movement cost based on its feature
+    if (edge) {
+        if (edge.feature === 'river') {
+            if (unit.stats.Keywords.includes('JetPack')) {
+                return 1;  // Units with 'heavy' keyword cannot cross rivers
+            }
+            if (!unit.stats.Keywords.includes('Infantry')) {
+                return -1;  // Units with 'heavy' keyword cannot cross rivers
+            }
+            return 2;  // River crossing costs 2 movement points unless the unit has a special keyword
+        }
+
+        if (edge.feature === 'elevation') {
+            if (unit.stats.Keywords.includes('JetPack')) {
+                return 1;  // Units with 'climber' keyword cross elevation normally
+            }
+            return 2;  // Elevation crossing costs 2 movement points unless the unit has a special keyword
+        }
+    }
+
+    // If there's no special edge feature, default to normal movement cost
+    return 1;
+}
+
+
+
 // Function to check if the unit can move to the target hex
 export function isWithinReach(unit, startHex, targetHex) {
-    const mapData = loadMapData();
+    mapData = loadMapData();
     const terrainRules = loadTerrainRules();
-    return calculatePath(startHex, targetHex, unit, mapData, terrainRules);
+    return calculatePath(unit, startHex, targetHex);
 }
