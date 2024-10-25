@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { InteractionType, InteractionResponseType, verifyKeyMiddleware } from 'discord-interactions';
-import { createUnit, deleteUnit, getUserInfo, getUnitInfo, getPlayerUnits,
+import { createUnit, deleteUnit, getUserInfo, getUnitInfo, getPlayerUnits, canExecuteCommand, startNewPeriod,
     getAvailableEquipment, upgradeUnitWithEquipment, updateUnitPosition, isWithinReach,
     createLiveEnemy, updateEnemyPosition, loadEnemiesData, updateEnemyStats, loadPlayerData
     } from './game_controller.js';  // Assuming game logic in game_controller.js
@@ -89,7 +89,7 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
       const isAdmin = member.roles && member.roles.includes(adminRoleId);
 
       // List of commands restricted to admins
-      const adminCommands = ['test', 'delete', 'enemy'];
+      const adminCommands = ['test', 'delete', 'enemy', 'newperiod'];
 
       // Restrict command to admins if it's in the adminCommands list
       if (adminCommands.includes(commandName) && !isAdmin) {
@@ -109,6 +109,15 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async fun
           data: {
             content: 'Test Successful!',
             flags: 64
+          },
+        });
+      }
+
+      if (name === 'newperiod') {
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: startNewPeriod(),
           },
         });
       }
@@ -536,51 +545,4 @@ function evenqOffsetNeighbor(hex, direction) {
   const parity = hex.col & 1; // 0 for even, 1 for odd columns
   const dir = evenqDirections[parity][direction];
   return { col: hex.col + dir.col, row: hex.row + dir.row };
-}
-
-// Function to check if a user’s unit can execute a command and update its timestamp
-function canExecuteCommand(userId, unitName, commandName) {
-    return { canExecute: true };
-    const now = new Date();
-    const dayOfWeek = now.getUTCDay(); // 0 (Sunday) to 6 (Saturday)
-
-    // Define the two timeframes
-    const isSaturdayToWednesday = dayOfWeek >= 6 || dayOfWeek <= 3; // Saturday (6) to Wednesday (3)
-    const isWednesdayToSaturday = dayOfWeek >= 3 && dayOfWeek <= 6; // Wednesday (3) to Saturday (6)
-
-    // Determine the current period
-    let currentPeriod = '';
-    if (isSaturdayToWednesday) {
-        currentPeriod = 'Saturday-Wednesday';
-    } else if (isWednesdayToSaturday) {
-        currentPeriod = 'Wednesday-Saturday';
-    }
-
-    // Initialize user data in the map if it doesn't exist
-    if (!commandTimestamps.has(userId)) {
-        commandTimestamps.set(userId, {});
-    }
-
-    // Get the user's units from the map
-    const userUnits = commandTimestamps.get(userId);
-
-    // Initialize the unit's command data if it doesn't exist
-    if (!userUnits[unitName]) {
-        userUnits[unitName] = {};
-    }
-
-    // Get the unit's command data
-    const unitCommands = userUnits[unitName];
-
-    // Check if the unit has already executed the command in the current period
-    if (unitCommands[commandName] && unitCommands[commandName].period === currentPeriod) {
-        return { canExecute: false, message: `⏳ Unit "${unitName}" has already used the ${commandName} command during the ${currentPeriod} period.` };
-    }
-
-    // Update the command's timestamp and period for the unit
-    unitCommands[commandName] = { timestamp: now, period: currentPeriod };
-    userUnits[unitName] = unitCommands;
-    commandTimestamps.set(userId, userUnits);
-
-    return { canExecute: true };
 }

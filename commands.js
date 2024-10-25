@@ -9,6 +9,12 @@ const TEST_COMMAND = {
   type: 1,
 };
 
+const NEW_PERIOD = {
+  name: 'newperiod',
+  description: 'Start a new period',
+  type: 1,
+};
+
 // CREATE UNITS
 
 // Load predefined units from units.json
@@ -208,7 +214,6 @@ const ENEMY_COMMAND = {
     ]
 };
 
-
 const MAP_COMMAND = {
   name: 'map',
   description: 'Get a snapshot of the current map.',
@@ -218,6 +223,7 @@ const MAP_COMMAND = {
 // Add all commands
 const ALL_COMMANDS = [
   CREATE_UNIT_COMMAND,
+  NEW_PERIOD,
   UPGRADE_COMMAND,
   TEST_COMMAND,
   MOVE_COMMAND,
