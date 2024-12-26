@@ -1,7 +1,7 @@
 [
     {
         "Unit_Name": "Infantry Unit",
-        "FS": 5,
+        "FS": 15,
         "Armor": 0,
         "Speed": 1,
         "Range": 1,
@@ -18,7 +18,7 @@
     },
     {
         "Unit_Name": "Power Armored Infantry",
-        "FS": 3,
+        "FS": 9,
         "Armor": 2,
         "Speed": 1,
         "Range": 1,
@@ -37,7 +37,7 @@
     },
     {
         "Unit_Name": "Combat Medical Unit",
-        "FS": 3,
+        "FS": 9,
         "Armor": 0,
         "Speed": 1,
         "Range": 1,
@@ -54,7 +54,7 @@
     },
     {
         "Unit_Name": "Irregular Unit",
-        "FS": 10,
+        "FS": 30,
         "Armor": 0,
         "Speed": 1,
         "Range": 1,
@@ -71,7 +71,7 @@
     },
     {
         "Unit_Name": "Special Forces",
-        "FS": 3,
+        "FS": 9,
         "Armor": 0,
         "Speed": 2,
         "Range": 1,
@@ -91,7 +91,7 @@
     },
     {
         "Unit_Name": "Combat Engineers",
-        "FS": 3,
+        "FS": 9,
         "Armor": 0,
         "Speed": 1,
         "Range": 1,
@@ -110,7 +110,7 @@
     },
     {
         "Unit_Name": "Sappers",
-        "FS": 2,
+        "FS": 6,
         "Armor": 0,
         "Speed": 1,
         "Range": 1,
@@ -130,7 +130,7 @@
     },
     {
         "Unit_Name": "Mechanized Infantry",
-        "FS": 3,
+        "FS": 9,
         "Armor": 2,
         "Speed": 3,
         "Range": 2,
@@ -144,6 +144,367 @@
         "Keywords": [
             "Infantry",
             "Armor"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Logistic Truck",
+        "FS": 9,
+        "Armor": 0,
+        "Speed": 3,
+        "Range": 0,
+        "Upgrade_Points": 1,
+        "Upgrade_Slots": {
+            "Secondary_Equipment": 1,
+            "Internal_Slot": 2
+        },
+        "Special_Rule": "Starts with 1 upgrade point1 on unit creation. \nCan carry up to FS infantry units/Supply Crates and Tow 1 Arty. \nFits Inside a Heavy Air Transport\nNo weapons of its own.\n",
+        "Keywords": [
+            "Armor", "Transport"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Light Vehicle",
+        "FS": 6,
+        "Armor": 0,
+        "Speed": 4,
+        "Range": 2,
+        "Upgrade_Slots": {
+            "Secondary_Equipment": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "Stealth - The only vehicle unit that has this tag. \nFits Inside and be air dropped out of a Heavy Air Transport",
+        "Keywords": [
+            "Armor", "Stealth"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Light Battle Tank",
+        "FS": 9,
+        "Armor": 2,
+        "Speed": 3,
+        "Range": 2,
+        "AP": 2,
+        "Upgrade_Slots": {
+            "Secondary_Equipment": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "Stealth - The only vehicle unit that has this tag. \nFits Inside and be air dropped out of a Heavy Air Transport",
+        "Keywords": [
+            "Armor"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Main Battle Tank",
+        "FS": 9,
+        "Armor": 3,
+        "Speed": 2,
+        "Range": 2,
+        "AP": 3,
+        "Upgrade_Slots": {
+            "Secondary_Equipment": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "",
+        "Keywords": [
+            "Armor"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Heavy Battle Tank",
+        "FS": 9,
+        "Armor": 4,
+        "Speed": 2,
+        "Range": 3,
+        "AP": 2,
+        "Upgrade_Slots": {
+            "Secondary_Equipment": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "",
+        "Keywords": [
+            "Armor"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Super Heavy Battle Tank",
+        "FS": 12,
+        "Armor": 5,
+        "Speed": 1,
+        "Range": 3,
+        "AP": 5,
+        "Upgrade_Slots": {
+            "Secondary_Equipment": 2,
+            "Internal_Slot": 2
+        },
+        "Special_Rule": "Fires TWICE with each action.",
+        "Keywords": [
+            "Armor", "DoubleShot"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Light Mech",
+        "FS": 9,
+        "Armor": 1,
+        "Speed": 4,
+        "Range": 0,
+        "Upgrade_Points": 1,
+        "Upgrade_Slots": {
+            "External_Slot": 1,
+            "Internal_Slot": 4
+        },
+        "Special_Rule": "Mechs can fire all weapons at once or 1 at a time",
+        "Keywords": [
+            "Mech"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Medium Mech",
+        "FS": 12,
+        "Armor": 2,
+        "Speed": 3,
+        "Range": 0,
+        "Upgrade_Slots": {
+            "External_Slot": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "Mechs can fire all weapons at once or 1 at a time",
+        "Keywords": [
+            "Mech"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Heavy Mech",
+        "FS": 15,
+        "Armor": 3,
+        "Speed": 2,
+        "Range": 0,
+        "Upgrade_Slots": {
+            "External_Slot": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "Mechs can fire all weapons at once or 1 at a time",
+        "Keywords": [
+            "Mech"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Corvette",
+        "FS": 30,
+        "Armor": 2,
+        "Speed": 4,
+        "Range": 6,
+        "Upgrade_Points": 2,
+        "Upgrade_Slots": {
+            "External_Slot": 2,
+            "Internal_Slot": 3
+        },
+        "Special_Rule": "Start with 2 Rec Points",
+        "Keywords": [
+            "Orbital", "Fly"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Destroyer",
+        "FS": 30,
+        "Armor": 3,
+        "Speed": 3,
+        "Range": 6,
+        "Upgrade_Slots": {
+            "External_Slot": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "",
+        "Keywords": [
+            "Orbital", "Fly"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Cruiser",
+        "FS": 30,
+        "Armor": 4,
+        "Speed": 2,
+        "Range": 6,
+        "Upgrade_Slots": {
+            "External_Slot": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "",
+        "Keywords": [
+            "Orbital", "Fly"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Battleship",
+        "FS": 30,
+        "Armor": 5,
+        "Speed": 1,
+        "Range": 6,
+        "Upgrade_Slots": {
+            "External_Slot": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "",
+        "Keywords": [
+            "Orbital", "Fly"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Fighter",
+        "FS": 9,
+        "Armor": 0,
+        "Speed": 8,
+        "Range": 1,
+        "Upgrade_Slots": {
+            "Light_Weapon": 4,
+            "Internal_Slot": 2
+        },
+        "Special_Rule": "Anti-Air Patrol Action, Para-survival pilot on death \nRearm after every FS based Attack\nAnti-Air Patrol: In an AOE Around the Aircraft fly a patrol. Will Auto-Attack \nup to force strength targets that enter into a hex around the fighter. ",
+        "Keywords": [
+            "Plane", "Fly"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "VTOL Heavy Troop Airlift",
+        "FS": 9,
+        "Armor": 1,
+        "Speed": 5,
+        "Range": 1,
+        "Upgrade_Slots": {
+            "Light_Weapon": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "2  Infantry Unit Capactiy and 1 Supply Cargo \nRearm after every FS based Attack\n\nComes with Repelling gear allowing infantry to drop from the VTOL and garrison a\nbuilding without using an action or requiring the VTOL to land. ",
+        "Keywords": [
+            "Plane", "Fly", "Transport", "Dropper"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "VTOL Multi-Purpose Airlift",
+        "FS": 9,
+        "Armor": 1,
+        "Speed": 5,
+        "Range": 1,
+        "Upgrade_Slots": {
+            "Light_Weapon": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "1 Infantry Unit Capacity  or one supply cargo and\n1 Light Vehicle/Light battle tank Unit Capacity\nRearm after every FS based Attack",
+        "Keywords": [
+            "Plane", "Fly", "Transport"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "VTOL Heavy Lift",
+        "FS": 9,
+        "Armor": 3,
+        "Speed": 5,
+        "Range": 0,
+        "Upgrade_Slots": {
+            "Light_Weapon": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "VTOL Craft\nCan move a single Mech or a Single SHBT, or a Heavy Tank Unit\nHollow Mid Section for Lifting Massive Equipment. Can lift 1 Supply Cargo",
+        "Keywords": [
+            "Plane", "Fly", "Transport"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Heavy Aerospace Transport",
+        "FS": 9,
+        "Armor": 0,
+        "Speed": 4,
+        "Range": 0,
+        "Upgrade_Slots": {
+            "Internal_Slot": 3
+        },
+        "Special_Rule": "Can move twice per turn\nMassive transport Aircraft\nCarry 5 Infantry Capactiy or 5 Supply Cargo and \nCarry 2 Vehicle Units up to Main Battletank Size or 2 Supply Cargo\n / no weapons / Parachute System\n\nCan Air drop all infantry and up to light tanks in scale as well as \nsupply to supply depots, must be above hex to drop them.\n",
+        "Keywords": [
+            "Plane", "Fly", "Transport", "SplitMove"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Bomber",
+        "FS": 18,
+        "Armor": 0,
+        "Speed": 3,
+        "Range": 0,
+        "Upgrade_Slots": {
+            "Bomb_Slot": 1,
+            "Internal_Slot": 1
+        },
+        "Special_Rule": "Can move twice per turn\nMust Re Arm after every attack\nReload after every FS based Attack",
+        "Keywords": [
+            "Plane", "Fly", "SplitMove"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Light Arty",
+        "FS": 6,
+        "Armor": 0,
+        "Speed": 1,
+        "Range": 5,
+        "Upgrade_Slots": {
+            "Secondary_Equipment": 1,
+            "Internal_Slot": 2
+        },
+        "Special_Rule": "2 Damage, Range 5\nCan't Attack Unless Deployed\nAction: Deploy - sets up guns to fire. Can't move while deployed.\nAction: Abandon Guns - flee from your quipment and turn into a 1FS 1 Speed \nInfantry Unit. Can retreieve new equipment from a supply depot for 5 supply crates\n1 Time for the entire campaign.\n\nThis unit can dropped from a orbital with the Heavy Drop Pod Upgrade.\nThis unit can para-drop from Heavy Transport Aerospace Craft. \n\n2 Attacks per Action ! Can be all on 1 Hex or split! \nIndirect Fire - Doesn't need direct LOS to fire on hostiles and hits all units in HEX targeted",
+        "Deployed": false,
+        "Abandon": false,
+        "Keywords": [
+            "Arty"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Heavy Arty",
+        "FS": 9,
+        "Armor": 0,
+        "Speed": 0,
+        "Range": 8,
+        "Upgrade_Slots": {
+            "Secondary_Equipment": 1,
+            "Internal_Slot": 2
+        },
+        "Special_Rule": "3 Damage, Range 8\nCan't Attack Unless Deployed\nAction: Deploy - sets up guns to fire. Can't move while deployed.\nAction: Abandon Guns - flee from your equipment and tunr in into a 1FS 1 Speed \nInfantry Unit. Can retreieve new equipment from a supply depot for 5 supply crates.\n\nCan be loaded into a Heavy Air Transport. \n \n3 Attacks per Action ! Can be all on 1 Hex or split! \nIndirect Fire - Doesn't need direct LOS to fire on hostiles and hits all units in HEX\ntargeted. ",
+        "Deployed": false,
+        "Abandon": false,
+        "Keywords": [
+            "Arty"
+        ],
+        "Equipped_Equipment": []
+    },
+    {
+        "Unit_Name": "Self-Propelled",
+        "FS": 6,
+        "Armor": 2,
+        "Speed": 2,
+        "Range": 4,
+        "Upgrade_Slots": {
+            "Secondary_Equipment": 1
+        },
+        "Special_Rule": "Minimum Range 2, Choose Wheeled or Tracked. \n(Comes with (5) AP Rounds. Once Used they are gone forever)\n\nIndirect Fire - Doesn't need direct LOS to fire on hostiles and hits all units in HEX\ntargeted. ",
+        "Keywords": [
+            "Arty"
         ],
         "Equipped_Equipment": []
     }

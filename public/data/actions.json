@@ -1,34 +1,46 @@
 [
   {
     "name": "DoubleTime",
-    "allowed_keywords": ["Infantry"]
+    "allowed_keywords": [ "Infantry" ]
   },
   {
     "name": "Attack",
-    "allowed_keywords": ["Infantry"]
-  },
-  {
-    "name": "Assault",
-    "allowed_keywords": ["Infantry"]
+    "allowed_keywords": [ "Infantry", "Mech", "Arty" ]
   },
   {
     "name": "Charge",
-    "allowed_keywords": ["Meele"]
-  },
-  {
-    "name": "StandGround",
-    "allowed_keywords": ["Meele"]
+    "allowed_keywords": [ "Meele" ]
   },
   {
     "name": "BreakOut",
-    "allowed_keywords": ["CombatIneffective"]
+    "allowed_keywords": [ "CombatIneffective" ]
   },
   {
     "name": "Build",
-    "allowed_keywords": ["Builder"]
+    "allowed_keywords": [ "Builder" ]
+  },
+  {
+    "name": "Repair",
+    "allowed_keywords": [ "Builder" ]
   },
   {
     "name": "Heal",
-    "allowed_keywords": ["Healer"]
+    "allowed_keywords": [ "Healer" ]
+  },
+  {
+    "name": "Mash",
+    "allowed_keywords": [ "Healer" ]
+  },
+  {
+    "name": "Embark",
+    "allowed_keywords": [ "Infantry" ]
+  },
+  {
+    "name": "Scout",
+    "allowed_keywords": [ "Infantry" ]
+  },
+  {
+    "name": "Resupply",
+    "allowed_keywords": [ "" ]
   }
 ]

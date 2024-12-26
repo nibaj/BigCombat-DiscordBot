@@ -338,7 +338,7 @@ function drawUnitInfo(unit, r) {
     ctx.textBaseline = "top";
     ctx.fillStyle = "red";
 
-    const unitInfoText = `${unit.name}\nFS: ${unit.FS} Armor: ${unit.Armor}`;
+    const unitInfoText = `${unit.name}\nHP: ${unit.FS} Armor: ${unit.Armor}`;
     const textWidth = ctx.measureText(unitInfoText).width;
     const textHeight = r * 0.6;
 
@@ -349,7 +349,7 @@ function drawUnitInfo(unit, r) {
     // Draw the unit's name, FS, and Armor stats
     ctx.fillStyle = "white";
     ctx.fillText(unit.name, x, y - r * 1.2);
-    ctx.fillText(`FS: ${unit.FS} Armor: ${unit.Armor}`, x, y - r * 0.8);
+    ctx.fillText(`HP: ${unit.FS} Armor: ${unit.Armor}`, x, y - r * 0.8);
 }
 
 // Draw unit FS and Armor stats

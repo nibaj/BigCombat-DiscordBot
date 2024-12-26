@@ -3,8 +3,9 @@ import express from 'express';
 import { InteractionType, InteractionResponseType, verifyKeyMiddleware } from 'discord-interactions';
 import {
   createUnit, deleteUnit, getUserInfo, getUnitInfo, getPlayerUnits, canExecuteCommand, startNewPeriod,
-  getAvailableEquipment, upgradeUnitWithEquipment, updateUnitPosition, isWithinReach,
-  createLiveEnemy, updateEnemyPosition, loadEnemiesData, updateEnemyStats, loadPlayerData
+  getAvailableEquipment, upgradeUnitWithEquipment, updateUnitPosition, isWithinReach, getAvailableAction, action,
+  createLiveEnemy, updateEnemyPosition, loadEnemiesData, updateEnemyStats, loadPlayerData, findAirportsWithinRange,
+  getAvailableEmbark,
 } from './game_controller.js';
 import { WebSocketServer } from 'ws';
 import fs from 'fs';
@@ -78,7 +79,7 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async (re
   const playerId = member.user.id;
   const username = member.user.username;
   const commandName = data?.name;
-  const adminRoleId = '1240625898710106122';  // Replace with your server's admin role ID
+  const adminRoleId = process.env.ADMIN_ID;
   const isAdmin = member.roles && member.roles.includes(adminRoleId);
   const adminCommands = ['test', 'delete', 'enemy', 'newperiod'];
 
@@ -150,6 +151,294 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async (re
         data: { content: result }
       });
     }
+
+
+
+    if (type === InteractionType.MESSAGE_COMPONENT && data.custom_id.startsWith('select_embark')) {
+      const embarkUnit = data.values[0];
+      const unitName = data.custom_id.split(':')[1];
+      updateUnitPosition(playerId,unitName,embarkUnit, embarkUnit);
+      return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: { content: `Unit "${unitName}" embarked ${embarkUnit}.` }
+      });
+    }
+
+    // Handle follow-up for action selection
+    if (data.custom_id && data.custom_id.startsWith('select_action')) {
+      const selectedAction = data.values[0];
+      const unitName = data.custom_id.split(':')[1];
+
+      // Check if the selected action is "embark"
+      if (selectedAction === 'Embark') {
+        const availableTransports = getAvailableEmbark(playerId, unitName);
+
+        if (!availableTransports.success) {
+          return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {content: availableTransports.message, flags: 64}
+          });
+        }
+
+        // List transports for the user to select
+        const transportOptions = availableTransports.transports.map(transport => ({
+          label: `${transport.name}`,
+          value: transport.name,
+        }));
+
+        // Send a follow-up with a select menu of available transports
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `Choose a transport to embark:`,
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 3,
+                    custom_id: `select_embark:${unitName}`,
+                    options: transportOptions.slice(0, 25),
+                    placeholder: 'Select a transport',
+                  },
+                ],
+              },
+            ],
+          },
+        });
+      }
+
+      if (selectedAction === 'Attack') {
+        const playerUnits = getPlayerUnits(playerId);
+        const unit = playerUnits.find(u => u.name.toLowerCase() === unitName.toLowerCase());
+
+        if (!unit) {
+          return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {content: `Unit "${unitName}" not found.`, flags: 64}
+          });
+        }
+
+        const weapons = unit.stats.Weapons || [];
+        const isMech = unit.stats.Keywords.includes("mech");
+        const isArty = unit.stats.Keywords.includes("arty");
+
+        if (weapons.length === 0) {
+          return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {content: `❌ No weapons available for unit "${unitName}".`, flags: 64}
+          });
+        }
+
+        console.log(weapons);
+
+        // Build weapon selection options
+        var weaponOptions = Object.keys(weapons).map(weaponName => ({
+          label: weaponName,
+          value: weaponName,
+        }));
+
+
+        // If "mech", allow multiple weapon selection
+        const placeholderText = isMech ? 'Select one or more weapons to attack' : 'Select a weapon to attack';
+        const maxValues = isMech ? weapons.length : 1;
+
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `Choose weapon(s) for unit "${unitName}" to attack.`,
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 3,
+                    custom_id: `select_weapon:${unitName}`,
+                    options: weaponOptions.slice(0, 25),
+                    placeholder: placeholderText,
+                    min_values: 1,
+                    max_values: maxValues,
+                  },
+                ],
+              },
+            ],
+          },
+        });
+      }
+    }
+    // Handle follow-up for weapon selection
+    if (type === InteractionType.MESSAGE_COMPONENT && data.custom_id.startsWith('select_weapon')) {
+      console.log("Selected Weapon");
+      const selectedWeapons = data.values;
+      const unitName = data.custom_id.split(':')[1];
+      const playerUnits = getPlayerUnits(playerId);
+      const unit = playerUnits.find(u => u.name.toLowerCase() === unitName.toLowerCase());
+
+      if (unit.stats.Keywords.includes("arty")) {
+        // If "arty", prompt for two hex targets
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `Choose two hexes to attack for "${unitName}":`,
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 3,
+                    custom_id: `select_hexes:${unitName}:${selectedWeapons.join(',')}`,
+                    placeholder: 'Enter two hexes, e.g., q1,r1 and q2,r2',
+                    min_values: 2,
+                    max_values: 2,
+                  },
+                ],
+              },
+            ],
+          },
+        });
+      } else {
+        console.log("Non arty");
+        // For non-arty units, prompt for single target selection
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `Choose a target for "${unitName}" using weapon(s) "${selectedWeapons.join(', ')}".`,
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 2,
+                    style: 1,
+                    label: "Enter Target",
+                    custom_id: `open_target_modal:${unitName}:${selectedWeapons.join(',')}`,
+                  },
+                ],
+              },
+            ],
+          },
+        });
+      }
+    }
+    if (data.custom_id && data.custom_id.startsWith('open_target_modal')) {
+      const [_, unitName, weaponNames] = data.custom_id.split(':');
+      const selectedWeapons = weaponNames.split(',');
+
+      return res.send({
+        type: InteractionResponseType.MODAL,
+        data: {
+          custom_id: `submit_target:${unitName}:${selectedWeapons.join(',')}`,
+          title: "Specify Target",
+          components: [
+            {
+              type: 1,
+              components: [
+                {
+                  type: 4,  // Text input component
+                  custom_id: 'target_input',
+                  style: 1, // Short input (single line)
+                  label: "Enter the target's name or ID",
+                  placeholder: "Type the target name or coordinates",
+                  required: true,
+                },
+              ],
+            },
+          ],
+        },
+      });
+    }
+
+    if (data.custom_id && data.custom_id.startsWith('submit_target')) {
+      const [_, unitName, weaponNames] = data.custom_id.split(':');
+      const selectedWeapons = weaponNames.split(',');
+      const targetId = data.components[0].components[0].value;  // Retrieve the text entered in the modal
+
+      const liveEnemies = loadEnemiesData();
+      const targetEnemy = liveEnemies[targetId];
+      if (!liveEnemies[targetId]) {
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `❌ Target "${targetId}" does not exist in the current enemies list.`,
+            flags: 64
+          }
+        });
+      }
+
+      // Calculate distance between the attacking unit and the target
+      const playerUnits = getPlayerUnits(playerId);
+      const unit = playerUnits.find(u => u.name.toLowerCase() === unitName.toLowerCase());
+      const unitPosition = unit.position;
+      const targetPosition = targetEnemy.position;
+      const distanceToTarget = hexDistance(unitPosition, targetPosition);
+      console.log(distanceToTarget);
+
+      // Check if the target is within range of each selected weapon
+      const outOfRangeWeapons = selectedWeapons.filter(weaponName => {
+        const weapon = unit.stats.Weapons[weaponName];
+        return weapon && distanceToTarget > weapon.range;
+      });
+
+      if (outOfRangeWeapons.length > 0) {
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `❌ Target "${targetId}" is out of range for the following weapons: ${outOfRangeWeapons.join(', ')}.`,
+            flags: 64
+          }
+        });
+      }
+
+      // Execute the attack with the provided target
+      const attackResult = executeTargetAttack(playerId, unitName, selectedWeapons, targetId);
+
+      return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: attackResult.success
+            ? `🎯 Unit "${unitName}" attacked target "${targetId}" with weapons ${selectedWeapons.join(', ')}.`
+            : attackResult.message,
+          flags: attackResult.success ? 0 : 64
+        },
+      });
+    }
+    // Handle hex or target selection for the attack
+    if (data.custom_id && (data.custom_id.startsWith('select_hexes') || data.custom_id.startsWith('select_target'))) {
+      const [unitName, weaponNames] = data.custom_id.split(':').slice(1);
+      const selectedWeapons = weaponNames.split(',');
+      let attackResult;
+
+      if (data.custom_id.startsWith('select_hexes')) {
+        const selectedHexes = data.values;
+
+        attackResult = executeAreaAttack(playerId, unitName, selectedWeapons, selectedHexes);
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: attackResult.success
+              ? `🎯 Unit "${unitName}" has attacked hexes ${selectedHexes.join(' and ')} with weapons ${selectedWeapons.join(', ')}.`
+              : attackResult.message,
+            flags: attackResult.success ? 0 : 64
+          }
+        });
+      } else if (data.custom_id.startsWith('select_target')) {
+        const selectedTarget = data.values[0];
+
+        attackResult = executeTargetAttack(playerId, unitName, selectedWeapons, selectedTarget);
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: attackResult.success
+              ? `🎯 Unit "${unitName}" has attacked target ${selectedTarget} with weapons ${selectedWeapons.join(', ')}.`
+              : attackResult.message,
+            flags: attackResult.success ? 0 : 64
+          }
+        });
+      }
+    }
+
+
+
 
     return res.status(400).json({ error: 'Unknown interaction type' });
 
@@ -368,9 +657,23 @@ async function handleUpgradeCommand(data, playerId, res) {
 }
 
 /* Handle limited-use commands like "move" and "action" */
-function handleLimitedCommands(data, commandName, playerId, res) {
+async function handleLimitedCommands(data, commandName, playerId, res) {
   const unitName = data.options.find(opt => opt.name === 'unit_name').value;
   const checkResult = canExecuteCommand(playerId, unitName, commandName);
+  checkResult.canExecute = true;
+
+  const playerUnits = getPlayerUnits(playerId);
+  const unit = playerUnits.find(u => u.name.toLowerCase() === unitName.toLowerCase());
+  if (!unit) {
+    const unitList = playerUnits.map(u => u.name).join(', ');
+    return res.send({
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        content: `Unit "${unitName}" not found. You have the following units: ${unitList}`,
+        flags: 64
+      }
+    });
+  }
 
   if (!checkResult.canExecute) {
     return res.send({
@@ -395,21 +698,8 @@ function handleLimitedCommands(data, commandName, playerId, res) {
       });
     }
 
-    const playerUnits = getPlayerUnits(playerId);
-    const unit = playerUnits.find(u => u.name.toLowerCase() === unitName.toLowerCase());
-    if (!unit) {
-      const unitList = playerUnits.map(u => u.name).join(', ');
-      return res.send({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-          content: `Unit "${unitName}" not found. You have the following units: ${unitList}`,
-          flags: 64
-        }
-      });
-    }
-
-    const currentQ = unit.position.x;
-    const currentR = unit.position.y;
+    var currentQ = unit.position.x;
+    var currentR = unit.position.y;
     if (currentQ === targetQ && currentR === targetR) {
       return res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -418,6 +708,61 @@ function handleLimitedCommands(data, commandName, playerId, res) {
           flags: 64
         }
       });
+    }
+
+    if (currentQ === "orbit") {
+      if (unit.stats.Keywords.includes("DropPod") || unit.stats.Keywords.includes("Orbital")) {
+        updateUnitPosition(playerId, unitName, targetQ, targetR);
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `Unit "${unitName}" moved to coordinates (${targetQ}, ${targetR}).`
+          }
+        });
+      }
+      if(findAirportsWithinRange(targetQ, targetR, unit.stats.Speed)){
+        updateUnitPosition(playerId, unitName, targetQ, targetR);
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `Unit "${unitName}" moved to coordinates (${targetQ}, ${targetR}).`
+          }
+        });
+      }else{
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `❌ Unit "${unitName}" can not drop from orbit.`,
+            flags: 64
+          }
+        });
+      }
+    }
+
+    // Check if currentQ is a string, indicating it's another unit's name
+    if (typeof currentQ === 'string') {
+      // Look up the specified unit by name
+      const allPlayers = loadPlayerData(); // Load all player data to search for the unit
+      let otherUnit = null;
+
+      for (const playerId in allPlayers) {
+        otherUnit = allPlayers[playerId].units.find(u => u.name.toLowerCase() === currentQ.toLowerCase());
+        if (otherUnit) break; // Stop searching once we find the unit
+      }
+
+      if (!otherUnit) {
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `❌ Referenced unit "${currentQ}" not found.`,
+            flags: 64
+          }
+        });
+      }
+
+      // Set currentQ and currentR to the coordinates of the referenced unit
+      currentQ = otherUnit.position.x;
+      currentR = otherUnit.position.y;
     }
 
     if (isWithinReach(unit, { q: currentQ, r: currentR }, { q: targetQ, r: targetR })) {
@@ -439,8 +784,53 @@ function handleLimitedCommands(data, commandName, playerId, res) {
     }
   }
 
+  // Handle action command
   if (commandName === 'action') {
-    // Placeholder for handling the action command if necessary
+    const playerUnits = getPlayerUnits(playerId);
+    const unit = playerUnits.find(u => u.name.toLowerCase() === unitName.toLowerCase());
+
+    if (!unit) {
+      return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: { content: `Unit "${unitName}" not found.`, flags: 64 }
+      });
+    }
+
+    // Get available actions for the unit
+    const availableAction = getAvailableAction(unit);
+    const actionOptions = availableAction.map(action => ({
+      label: action.name,
+      value: action.name,
+    }));
+
+    res.send({
+      type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+    });
+
+    // Prompt the user to select an action
+    await fetch(`https://discord.com/api/v10/webhooks/${process.env.APP_ID}/${res.req.body.token}/messages/@original`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bot ${process.env.BOT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        content: `Choose action for unit "${unitName}"`,
+        components: [
+          {
+            type: 1, // Action row
+            components: [
+              {
+                type: 3, // Select menu
+                custom_id: `select_action:${unitName}`,
+                options: actionOptions.slice(0, 25),
+                placeholder: 'Select action',
+              },
+            ],
+          },
+        ],
+      }),
+    });
   }
 }
 
@@ -451,3 +841,11 @@ function handleLimitedCommands(data, commandName, playerId, res) {
 app.listen(PORT, () => {
   console.log('Listening on port', PORT);
 });
+
+function hexDistance(a, b) {
+  return Math.max(
+    Math.abs(a.x - b.x),
+    Math.abs(a.y - b.y),
+    Math.abs(-a.x - a.y - (-b.x - b.y))
+  );
+}

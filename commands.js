@@ -220,6 +220,20 @@ const MAP_COMMAND = {
   type: 1,
 };
 
+const ACTION_COMMAND = {
+  name: 'action',
+  description: 'Action for your unit',
+  options: [
+    {
+      type: 3,  // STRING type
+      name: 'unit_name',
+      description: 'The name of the unit',
+      required: true,
+    }
+  ],
+  type: 1,
+};
+
 // Add all commands
 const ALL_COMMANDS = [
   CREATE_UNIT_COMMAND,
@@ -231,5 +245,6 @@ const ALL_COMMANDS = [
   INFO_COMMAND,
   ENEMY_COMMAND,
   MAP_COMMAND,
+  ACTION_COMMAND,
 ];
 InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

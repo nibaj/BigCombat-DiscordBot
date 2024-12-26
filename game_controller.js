@@ -41,7 +41,15 @@ export function createUnit(playerId, username, unitName, unitType) {
 
   const selectedUnit = units.find(unit => unit.Unit_Name === unitType);
   if (!selectedUnit) {
-    return `Invalid unit type "${unitType}". Please choose a valid unit type.`;
+    return { success: false, message: `❌ Invalid unit type "${unitType}". Please choose a valid unit type.` };
+  }
+
+  // Check if the unitName is unique across all players
+  for (const player in players) {
+    const existingUnit = players[player].units.find(unit => unit.name.toLowerCase() === unitName.toLowerCase());
+    if (existingUnit || unitName == "orbit") {
+      return { success: false, message: `❌ The unit name "${unitName}" is already in use. Please choose a different name.` };
+    }
   }
 
   if (!players[playerId]) {
@@ -55,7 +63,7 @@ export function createUnit(playerId, username, unitName, unitType) {
     return { success: false, message: `You have reached your unit limit of ${players[playerId].unitLimit}.` };
   }
 
-  const newUnit = { name: unitName, type: unitType, position: { x: -1, y: -1 }, stats: selectedUnit };
+  const newUnit = { name: unitName, type: unitType, position: { x: "orbit", y: "orbit" }, stats: selectedUnit };
   playerUnits.push(newUnit);
   savePlayerData(players);
 
@@ -429,6 +437,17 @@ export function isWithinReach(unit, startHex, targetHex) {
   return calculatePath(unit, startHex, targetHex);
 }
 
+// Find airports in the map data
+export function findAirportsWithinRange(targetQ, targetR, range) {
+  const mapData = loadMapData();
+  const airports = mapData.hexes.filter(hex => hex.build === "airport");
+
+  return airports.some(airport => {
+    const distance = hexDistance({ q: targetQ, r: targetR }, { q: airport.q, r: airport.r });
+    return distance <= range;
+  });
+}
+
 /* ==========================
    ENEMY POSITION UPDATES
    ========================== */
@@ -467,4 +486,91 @@ export function updateEnemyStats(enemyID, updatedStats) {
 export function getEnemyTypes() {
   const predefinedEnemies = loadPredefinedEnemies();
   return predefinedEnemies.map(enemy => enemy.Enemy_Name);
+}
+
+/* ==========================
+   ACTION MANAGEMENT
+   ========================== */
+
+export function getAvailableAction(unit){
+  const availableAction = [];
+
+  if(unit.stats.Keywords.includes("CombatIneffective")){
+    availableAction.push({ name: "Break Out" });
+    return availableAction;
+  }
+  if(unit.stats.Keywords.includes("Brawl")){
+    availableAction.push({ name: "Break Out" });
+  }
+  if(unit.stats.Keywords.includes("Air")){
+    availableAction.push({ name: "Land" });
+  }
+  if(unit.stats.Keywords.includes("Builder")){
+    availableAction.push({ name: "Build" });
+  }
+  if(unit.stats.Keywords.includes("Melee")){
+    availableAction.push({ name: "Charge" });
+  }
+  if(unit.stats.Keywords.includes("Infantry")){
+    availableAction.push({ name: "Double Time" });
+    availableAction.push({ name: "Garrison" });
+  }
+  if(unit.stats.Keywords.includes("Transport")){
+    availableAction.push({ name: "Drop Off" });
+  }
+  if(unit.stats.Keywords.includes("Recall")){
+    availableAction.push({ name: "Recall" });
+  }
+
+  availableAction.push({ name: "Attack" });
+  availableAction.push({ name: "Scout" });
+  availableAction.push({ name: "Embark" });
+  availableAction.push({ name: "Resupply" });
+  return availableAction;
+}
+
+export function action(playerId, unitName, selectedaction){
+
+  const players = loadPlayerData();
+  const player = players[playerId];
+  if (!player) return `Player not found.`;
+
+  const unit = player.units.find(u => u.name.toLowerCase() === unitName.toLowerCase());
+  if (!unit) return `Unit "${unitName}" not found.`;
+
+  if(selectedaction == "Embark"){
+
+  }
+
+  return 'IN PROGRESS'
+
+}
+
+export function getAvailableEmbark(playerId, unitName){
+  const players = loadPlayerData();
+  const player = players[playerId];
+  if (!player) return `Player not found.`;
+
+  const unit = player.units.find(u => u.name.toLowerCase() === unitName.toLowerCase());
+  const { x, y } = unit.position;
+
+  const availableTransports = [];
+  for (const otherPlayerId in players) {
+    for (const otherUnit of players[otherPlayerId].units) {
+      // Check if the other unit is in the same hex and has the "Transport" keyword
+      if (
+        otherUnit.position.x === x &&
+        otherUnit.position.y === y &&
+        otherUnit.stats.Keywords.includes("Transport")
+      ) {
+        availableTransports.push({name: otherUnit.name});
+      }
+    }
+  }
+
+  if (availableTransports.length === 0) {
+    return { success: false, message: `❌ No available transports found in the same hex.` };
+  }
+
+  return { success: true, transports: availableTransports };
 }
